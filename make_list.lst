@@ -1,0 +1,449 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:25 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : make_list.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o make_list.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "make_list"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine make_list
+               2                     c
+               3                     c  m        : start point of Lugendre number
+               4                     c  mlist    : index of Fourier number on PE
+               5                     c  mlistnum : index of Fourier number on PE
+               6                     c
+               7                     c
+               8                     
+               9                           include '../include/param.h'
+     1         1                     c
+     1         2                     cxxx  include param.h
+     1         3                     c
+     1         4                           parameter (nx=2160, my= nx/2, lev= 1,nxp1=nx+1)
+     1         5                           parameter (jtrun= 2*((1+(nx-1)/3)/2), mlmax= jtrun*(jtrun+1)/2)
+     1         6                     c
+     1         7                     c specify the ncld = number of water spieces
+     1         8                     c             ncld = 1  : only humidity
+     1         9                     c                  = 2  : humidity and mixed cloud as qcirs
+     1        10                     c                  = 3  : humidity, qci and qrs  (not yet)
+     1        11                     c
+     1        12                           parameter(ncld=1)
+     1        13                     c
+     1        14                     c  specify the number of processors to be used for running model
+     1        15                     c
+     1        16                           parameter(npe=16)
+     1        17                     c      parameter(npe=1)
+     1        18                           parameter(jtmax=jtrun/npe+1)
+     1        19                           parameter(my_max=((my/npe+1)))
+     1        20                     c
+     1        21                     cxxx
+              10                           include '../include/mpe.h'
+     2         1                     c
+     2         2                     c  include mpe.h
+     2         3                     c
+     2         4                           parameter(mpe_integer=0)
+     2         5                           parameter(mpe_double=1)
+     2         6                           parameter(mpe_logical=2)
+     2         7                     c
+              11                           include '../include/rank.h'
+     3         1                           common/mpe_comm/nsize, myrank
+              12                           include '../include/index.h'
+     4         1                     c      common /mwork/mlistnum,mlist(500)
+     4         2                     c     &             ,nlist(500),ilist(500)
+     4         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     4         4                     c     &            , jlistnum_tmp(1280)
+     4         5                           common /mwork/mlistnum,mlist(1000)
+     4         6                          &             ,nlist(1000),ilist(1000)
+     4         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     4         8                          &            , jlistnum_tmp(2560)
+              13                     
+              14     1        s            do mm=1,jtmax
+              15     1        s               mlist(mm)=0
+              16     1        s            enddo
+              17                     
+              18                           mlistnum=0
+              19     1       8s            do m=1,jtmax*nsize
+              20     1       8s               nlist(m)=0 ; ilist(m)=0
+              21     1       8s            enddo
+              22                     
+              23                     c
+              24                     c for spectral space, use folded cyclic allocation type
+              25                     c
+              26                     
+              27                           m=jtrun
+              28     1                     do mm=1,jtmax+1,2
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    PREFETCH       : 32
+                                   <<<      ilist: 16, nlist: 16
+                                   <<< Loop-information  End >>>
+              29     2       8s               do ipe=nsize,1,-1
+              30     3       8s                  if(m.gt.0)then
+              31     4       8s                   if(ipe-1 .eq. myrank) then
+              32     4       8s                     mlistnum=mlistnum+1
+              33     4       8s                     mlist(mm)=m
+              34     4       8s                   endif
+              35     3       8s                     n=(ipe-1)*jtmax+mm
+              36     3       8s                     nlist(m)=n
+              37     3       8s                     if(ipe-1 .eq. myrank) ilist(m)=mm
+              38     3       8s                     m=m-1
+              39     3       8s                  endif
+              40     2       8s               enddo
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    PREFETCH       : 32
+                                   <<<      ilist: 16, nlist: 16
+                                   <<< Loop-information  End >>>
+              41     2       8s               do ipe=1,nsize
+              42     3       8s                  if(m.gt.0)then
+              43     4       8s                   if(ipe-1 .eq. myrank) then
+              44     4       8s                     mlistnum=mlistnum+1
+              45     4       8s                     mlist(mm+1)=m
+              46     4       8s                   endif
+              47     3       8s                     n=(ipe-1)*jtmax+mm+1
+              48     3       8s                     nlist(m)=n
+              49     3       8s                     if(ipe-1 .eq. myrank) ilist(m)=mm+1
+              50     3       8s                     m=m-1
+              51     3       8s                  endif
+              52     2       8s               enddo
+              53     1                     enddo
+              54                     
+              55                     
+              56                           jlistnum=0
+              57                     
+              58     1        s            do jj=1,my_max
+              59     1        s               jlist1(jj)=0
+              60     1        s            enddo
+              61                     
+              62     1        s            do j=1,my
+              63     1        s               jlist2(j)=0
+              64     1        s            enddo
+              65                     
+              66                     c
+              67                     c for grid space, use cyclic allocation type
+              68                     c
+              69                     
+              70                           j=1
+              71     1                     do jj=1,my_max
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    PREFETCH       : 16
+                                   <<<      jlist2: 16
+                                   <<< Loop-information  End >>>
+              72     2       8s               do ipe=1,nsize
+              73     3       8s                  if(j.le.my)then
+              74     4       8s                   if(ipe-1 .eq. myrank) then
+              75     4       8s                     jlistnum=jlistnum+1
+              76     4       8s                     jlist1(jj)=j
+              77     4       8s                   endif
+              78     3       8s                     j2=(ipe-1)*my_max+jj
+              79     3       8s                     jlist2(j)=j2
+              80     3       8s                     j=j+1
+              81     3       8s                  endif
+              82     2       8s               enddo
+              83     1                     enddo
+              84                     c
+              85                     
+              86                     c  Usage:
+              87                     c        do ipe=1,npe
+              88                     c        do mm=1,mlistnum(ipe)
+              89                     c           mf=mlist(mm,ipe); m=nlist(mf)
+              90                     c           ...
+              91                     c        enddo
+              92                     c        enddo
+              93                     
+              94                           return
+              95                           end
+
+ Diagnostic messages: program name(make_list)
+   jwd6123s-i  "make_list.f", line 14: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8663o-i  "make_list.f", line 14: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd6123s-i  "make_list.f", line 19: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8663o-i  "make_list.f", line 19: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "make_list.f", line 19: Loop unrolled 8 times.
+   jwd6123s-i  "make_list.f", line 29: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd6229s-i  "make_list.f", line 29: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "make_list.f", line 29: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8202o-i  "make_list.f", line 29: Loop unrolled 8 times.
+   jwd6202s-i  "make_list.f", line 30: SIMD conversion cannot be applied to DO loop: data dependency of variable 'm' may cause different results from serial execution for loop.
+   jwd6228s-i  "make_list.f", line 36: SIMD conversion cannot be applied to DO loop: data dependency of variable may cause different results from serial execution for loop.
+   jwd6123s-i  "make_list.f", line 41: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd6229s-i  "make_list.f", line 41: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "make_list.f", line 41: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8202o-i  "make_list.f", line 41: Loop unrolled 8 times.
+   jwd6202s-i  "make_list.f", line 42: SIMD conversion cannot be applied to DO loop: data dependency of variable 'm' may cause different results from serial execution for loop.
+   jwd6228s-i  "make_list.f", line 48: SIMD conversion cannot be applied to DO loop: data dependency of variable may cause different results from serial execution for loop.
+   jwd6123s-i  "make_list.f", line 58: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8663o-i  "make_list.f", line 58: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd6123s-i  "make_list.f", line 62: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8663o-i  "make_list.f", line 62: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd6123s-i  "make_list.f", line 72: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd6229s-i  "make_list.f", line 72: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "make_list.f", line 72: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8202o-i  "make_list.f", line 72: Loop unrolled 8 times.
+   jwd6202s-i  "make_list.f", line 73: SIMD conversion cannot be applied to DO loop: data dependency of variable 'j' may cause different results from serial execution for loop.
+   jwd6228s-i  "make_list.f", line 79: SIMD conversion cannot be applied to DO loop: data dependency of variable may cause different results from serial execution for loop.
+
+ Procedure information
+   Lines      : 132
+   Statements : 71
+   Stack(byte): 0
+   Prefetch num: 80
+
+ Scoping unit of external sub-program : make_list
+   Attribute and Cross reference of name
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 20  37  49
+      |(Reference)      : 
+     ipe
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 29  41  72
+      |(Reference)      : 31  35  37  43  47  49  74  78
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 62  70  80
+      |(Reference)      : 63  73  76  79  80
+     j2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 78
+      |(Reference)      : 79
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 58  71
+      |(Reference)      : 59  76  78
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 59  76
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 63  79
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 56  75
+      |(Reference)      : 75
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-18
+      |(Definition)     : 
+      |(Reference)      : 14  19  28  35  47
+     jtrun
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 1-5  1-5  1-18  27
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     lev
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 19  27  38  50
+      |(Reference)      : 20  20  30  33  36  37  38  42  45  48  49  50
+     make_list
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 15  33  45
+      |(Reference)      : 
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 18  32  44
+      |(Reference)      : 32  44
+     mlmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mm
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 14  28
+      |(Reference)      : 15  33  35  37  45  47  49
+     mpe_comm
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_double
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_integer
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-4
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_logical
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-6
+      |(Definition)     : 
+      |(Reference)      : 
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-19  62  73
+     my_max
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-19
+      |(Definition)     : 
+      |(Reference)      : 58  71  78
+     myrank
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 31  37  43  49  74
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 35  47
+      |(Reference)      : 36  48
+     ncld
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-12
+      |(Definition)     : 
+      |(Reference)      : 
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 20  36  48
+      |(Reference)      : 
+     npe
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-16
+      |(Definition)     : 
+      |(Reference)      : 1-18  1-19
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 19  29  41  72
+     nx
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-4  1-4  1-5
+     nxp1
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+
+ Total information
+   Procedures       : 1
+   Total lines      : 132
+   Total statements : 71
+   Total stack(byte): 0
+   Total prefetch num: 80
+
+ Include file name list
+     1 : ../include/param.h
+     2 : ../include/mpe.h
+     3 : ../include/rank.h
+     4 : ../include/index.h
+

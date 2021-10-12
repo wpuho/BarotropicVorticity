@@ -1,0 +1,202 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:11 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : sortml.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o sortml.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "sortml"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine sortml (jtrun,mlmax,msort,lsort,mlsort)
+               2                     c
+               3                     c  sortml builds pointer arrays for functional dependency between
+               4                     c  1-d spectral index and zonal and total wavenumber indices.  this
+               5                     c  subroutine reflects the coefficient storage strategy used in the
+               6                     c  model
+               7                     c
+               8                     c ***input***
+               9                     c
+              10                     c  jtrun:  zonal and total wavenumber limit
+              11                     c  mlmax:  total number of 1-d spectral index for triangular trunc
+              12                     c
+              13                     c  ***output***
+              14                     c
+              15                     c  msort:  zonal wavenumber as function of 1-d spectral index
+              16                     c  lsort:  total wavenumber as function of 1-d spectral index
+              17                     c  mlsort: total wavenumber index as function of zonal and total
+              18                     c          wavenumber
+              19                     c
+              20                     c *******************************************************************
+              21                     c
+              22                           dimension msort(mlmax),lsort(mlmax),mlsort(jtrun,jtrun)
+              23                     c
+              24                           mlx= (jtrun/2)*((jtrun+1)/2)
+              25                           ml= 0
+              26     1                     do 1 k=1,jtrun-1,2
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              27     2       6s            do 1 m=1,jtrun-k
+              28     2       6s            ml= ml+1
+              29     2       6s            mlp= ml+mlx
+              30     2       6s            mlsort(m,m+k)= mlp
+              31     2       6s            mlsort(m,m+k-1)= ml
+              32     2       6s            msort(ml)= m
+              33     2       6s            lsort(ml)= m+k-1
+              34     2       6s            msort(mlp)= m
+              35     2       6s            lsort(mlp)= m+k
+              36     1       6s          1 continue
+              37                     c
+              38                           ml= mlp
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              39     1       8s            do 2 m=2,jtrun,2
+              40     1       8s            ml= ml+1
+              41     1       8s            mlsort(m,jtrun)= ml
+              42     1       8s            msort(ml)= m
+              43     1       8s            lsort(ml)= jtrun
+              44     1       8s          2 continue
+              45                           return
+              46                           end
+
+ Diagnostic messages: program name(sortml)
+   jwd8220o-i  "sortml.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6123s-i  "sortml.f", line 27: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8204o-i  "sortml.f", line 27: This loop is software pipelined.
+   jwd8205o-i  "sortml.f", line 27: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 24.
+   jwd6203s-i  "sortml.f", line 32: SIMD conversion cannot be applied to DO loop: the variable 'mlx' in the subscript expression for array 'msort' may cause different results from serial execution.
+   jwd8209o-i  "sortml.f", line 33: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6203s-i  "sortml.f", line 33: SIMD conversion cannot be applied to DO loop: the variable 'mlx' in the subscript expression for array 'lsort' may cause different results from serial execution.
+   jwd6123s-i  "sortml.f", line 39: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8204o-i  "sortml.f", line 39: This loop is software pipelined.
+   jwd8205o-i  "sortml.f", line 39: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 32.
+
+ Procedure information
+   Lines      : 46
+   Statements : 24
+   Stack(byte): 0
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : sortml
+   Attribute and Cross reference of name
+     jtrun
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 22  22  24  24  26  27  39  41  43
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 26
+      |(Reference)      : 27  30  31  33  35
+     lsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  22
+      |(Definition)     : 33  35  43
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 27  39
+      |(Reference)      : 30  30  31  31  32  33  34  35  41  42
+     ml
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 25  28  38  40
+      |(Reference)      : 28  29  31  32  33  40  41  42  43
+     mlmax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 22  22
+     mlp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 29
+      |(Reference)      : 30  34  35  38
+     mlsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  22
+      |(Definition)     : 30  31  41
+      |(Reference)      : 
+     mlx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 24
+      |(Reference)      : 29
+     msort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  22
+      |(Definition)     : 32  34  42
+      |(Reference)      : 
+     sortml
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+          1  execution     (Definition) 36  
+                           (Reference)  26  27
+          2  execution     (Definition) 44  
+                           (Reference)  39
+
+ Total information
+   Procedures       : 1
+   Total lines      : 46
+   Total statements : 24
+   Total stack(byte): 0
+   Total prefetch num: 0
+

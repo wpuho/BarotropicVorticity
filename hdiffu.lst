@@ -1,0 +1,970 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:35 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : hdiffu.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o hdiffu.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "hdiffu"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine hdiffu
+               2                     c
+               3                           include '../include/param.h'
+     1         1                     c
+     1         2                     cxxx  include param.h
+     1         3                     c
+     1         4                           parameter (nx=2160, my= nx/2, lev= 1,nxp1=nx+1)
+     1         5                           parameter (jtrun= 2*((1+(nx-1)/3)/2), mlmax= jtrun*(jtrun+1)/2)
+     1         6                     c
+     1         7                     c specify the ncld = number of water spieces
+     1         8                     c             ncld = 1  : only humidity
+     1         9                     c                  = 2  : humidity and mixed cloud as qcirs
+     1        10                     c                  = 3  : humidity, qci and qrs  (not yet)
+     1        11                     c
+     1        12                           parameter(ncld=1)
+     1        13                     c
+     1        14                     c  specify the number of processors to be used for running model
+     1        15                     c
+     1        16                           parameter(npe=16)
+     1        17                     c      parameter(npe=1)
+     1        18                           parameter(jtmax=jtrun/npe+1)
+     1        19                           parameter(my_max=((my/npe+1)))
+     1        20                     c
+     1        21                     cxxx
+               4                           include '../include/mpe.h'
+     2         1                     c
+     2         2                     c  include mpe.h
+     2         3                     c
+     2         4                           parameter(mpe_integer=0)
+     2         5                           parameter(mpe_double=1)
+     2         6                           parameter(mpe_logical=2)
+     2         7                     c
+               5                           include '../include/rank.h'
+     3         1                           common/mpe_comm/nsize, myrank
+               6                           include '../include/index.h'
+     4         1                     c      common /mwork/mlistnum,mlist(500)
+     4         2                     c     &             ,nlist(500),ilist(500)
+     4         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     4         4                     c     &            , jlistnum_tmp(1280)
+     4         5                           common /mwork/mlistnum,mlist(1000)
+     4         6                          &             ,nlist(1000),ilist(1000)
+     4         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     4         8                          &            , jlistnum_tmp(2560)
+               7                           include '../include/const.h'
+     5         1                     c
+     5         2                           common/constp/
+     5         3                          &  poly(jtrun,my/2,jtmax),dpoly(jtrun,my/2,jtmax)
+     5         4                          &, eps4(jtrun,jtmax),cim(jtmax)
+     5         5                          &, wdfac(jtrun,jtmax),wcfac(jtrun,jtmax)
+     5         6                     c
+     5         7                           logical fplane,chmean
+     5         8                     
+     5         9                           common/const/ weight(my),sinl(my),cosl(my)
+     5        10                          *, cor(my),onocos(my),basu(my),basv(my)
+     5        11                          *, mlsort(jtrun,jtrun),msort(mlmax),lsort(mlmax)
+     5        12                     c
+     5        13                          *, rad,radsq,omega,cp,rgas,pi,capa,grav,hmean,taui,taue,tauo
+     5        14                          *, dt,tau,tfilt,hfilt,ktopo
+     5        15                          *, vmax,rvm,b,tylat,tylon,fplane
+     5        16                     c
+               8                           include '../include/grid.h'
+     6         1                     c
+     6         2                           common /swgrid/phit(nx,lev,my_max),ut(nx,lev,my_max),vt(nx,lev,my_max)
+     6         3                          *, rvor(nx,lev,my_max),rdiv(nx,lev,my_max),str(nx,lev,my_max),topo(nx,my),ix(3),jy(3)
+     6         4                          *, xlon(nxp1,my),xlat(my),utm(nx,lev,my_max),vtm(nx,lev,my_max),phitm(nx,lev,my_max)
+     6         5                          *, rvorm(nx,lev,my_max),rdivm(nx,lev,my_max),pvt(nx,lev,my_max)
+     6         6                          *, dlzl(nx,my),dtzl(nx,my),dlpl(nx,my),dtpl(nx,my)
+     6         7                     
+     6         8                           common /grid/phi(nx,my),u(nx,my),v(nx,my),vor(nx,my),div(nx,my),pv(nx,my),st(nx,my)
+     6         9                          *,   phiold(nx,my),vorold(nx,my),divold(nx,my),uold(nx,my),vold(nx,my)
+     6        10                          *,   vorf(nx,my),divf(nx,my),phif(nx,my),r(nx,my),fbt(nx,my),fvn(nx,my),ftn(nx,my)
+               9                           include '../include/spec.h'
+     7         1                     c
+     7         2                           common/specv/vorspc(lev,2,jtrun,jtmax),divspc(lev,2,jtrun,jtmax)
+     7         3                          *, phispc(lev,2,jtrun,jtmax),strspc(lev,2,jtrun,jtmax),topospc(jtrun,jtmax,2)
+     7         4                          *, vortt(lev,2,jtrun,jtmax),divtt(lev,2,jtrun,jtmax)
+     7         5                          *, vortespc(lev,2,jtrun,jtmax),divtespc(lev,2,jtrun,jtmax)
+     7         6                     c
+              10                     c
+              11                     c  compute diffusion coefficients
+              12                     c
+              13                           dta=dt
+              14                           hfilt1=hfilt
+              15                     c      hfilt2=hfilt
+              16                     c      hfilt3=hfilt
+              17                     c
+              18                     c  diffuse vorticity and divergence fields
+              19                     c
+              20                           k=1
+              21                     c
+              22     1                     do 30 m=1,mlistnum
+              23     1                        mf=mlist(m)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              24     2       4v            do 30 n=mf,jtrun
+              25     2       4v              c1=1.+dta*hfilt1*eps4(n,m)**2
+              26     2               c        c2=1.+dta*hfilt2*eps4(n,m)**2
+              27     2               c        c3=1.+dta*hfilt3*eps4(n,m)**2
+              28     2               c        c1=1.+dta*hfilt1*eps4(n,m)**3
+              29     2               c        c2=1.+dta*hfilt2*eps4(n,m)**3
+              30     2               c        c3=1.+dta*hfilt3*eps4(n,m)**3
+              31     2       4v              vorspc(k,1,n,m)=vorspc(k,1,n,m)/c1
+              32     2       4v              vorspc(k,2,n,m)=vorspc(k,2,n,m)/c1
+              33     2               c        divspc(k,1,n,m)=divspc(k,1,n,m)/c2
+              34     2               c        divspc(k,2,n,m)=divspc(k,2,n,m)/c2
+              35     2               c        phispc(k,1,n,m)=phispc(k,1,n,m)/c3
+              36     2               c        phispc(k,2,n,m)=phispc(k,2,n,m)/c3
+              37     1       4v       30   continue
+              38                     c
+              39                           return
+              40                           end
+
+ Diagnostic messages: program name(hdiffu)
+   jwd2003i-i  "../include/const.h", line 7: 'chmean' is declared in INCLUDE but never referenced.
+   jwd2441i-i  "../include/const.h", line 9: Common block object 'vmax' relocated to correct boundary.
+   jwd8220o-i  "hdiffu.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "hdiffu.f", line 24: SIMD conversion is applied to DO loop with DO variable 'n'.
+   jwd8204o-i  "hdiffu.f", line 24: This loop is software pipelined.
+   jwd8205o-i  "hdiffu.f", line 24: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 72.
+   jwd8206o-i  "hdiffu.f", line 31: Division is changed to multiplication by reciprocal.
+   jwd8206o-i  "hdiffu.f", line 32: Division is changed to multiplication by reciprocal.
+   jwd8209o-i  "hdiffu.f", line 37: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+
+ Procedure information
+   Lines      : 109
+   Statements : 31
+   Stack(byte): 0
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : hdiffu
+   Attribute and Cross reference of name
+     b
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     basu
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     basv
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     c1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 25
+      |(Reference)      : 31  32
+     capa
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     chmean
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : 
+      |(Declaration)    : 5-7
+      |(Definition)     : 
+      |(Reference)      : 
+     cim
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     const
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     constp
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     cor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     cosl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     cp
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     div
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     divf
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     divold
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     divspc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     divtespc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     divtt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     dlpl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     dlzl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     dpoly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     dt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 13
+     dta
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 13
+      |(Reference)      : 25
+     dtpl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     dtzl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     eps4
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 25
+     fbt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     fplane
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-7  5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     ftn
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     fvn
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     grav
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     grid
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     hdiffu
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     hfilt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 14
+     hfilt1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 14
+      |(Reference)      : 25
+     hmean
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     ix
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-18
+      |(Definition)     : 
+      |(Reference)      : 5-2  5-2  5-2  5-2  5-2  5-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2
+     jtrun
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 1-5  1-5  1-18  5-2  5-2  5-2  5-2  5-2  5-9  5-9  7-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2  24
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jy
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 20
+      |(Reference)      : 31  31  32  32
+     ktopo
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     lev
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2  7-2
+     lsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 22
+      |(Reference)      : 23  25  31  31  32  32
+     mf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 23
+      |(Reference)      : 24
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 23
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 22
+     mlmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 5-9  5-9
+     mlsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_comm
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_double
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_integer
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-4
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_logical
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-6
+      |(Definition)     : 
+      |(Reference)      : 
+     msort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-19  5-2  5-2  5-9  5-9  5-9  5-9  5-9  5-9  5-9  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8
+     my_max
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-19
+      |(Definition)     : 
+      |(Reference)      : 6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2
+     myrank
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 24
+      |(Reference)      : 25  31  31  32  32
+     ncld
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-12
+      |(Definition)     : 
+      |(Reference)      : 
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     npe
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-16
+      |(Definition)     : 
+      |(Reference)      : 1-18  1-19
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     nx
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-4  1-4  1-5  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-2  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8  6-8
+     nxp1
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 6-2
+     omega
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     onocos
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     phi
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     phif
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     phiold
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     phispc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     phit
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     phitm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     pi
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     poly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     pv
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     pvt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     r
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     rad
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     radsq
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     rdiv
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     rdivm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     rgas
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     rvm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     rvor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     rvorm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     sinl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     specv
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     st
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     str
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     strspc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     swgrid
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     tau
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     taue
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     taui
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tauo
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tfilt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     topo
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     topospc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     tylat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tylon
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     u
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     uold
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     ut
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     utm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     v
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     vmax
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     vold
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     vor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     vorf
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     vorold
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     vorspc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 31  32
+      |(Reference)      : 31  32
+     vortespc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     vortt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 7-2
+      |(Definition)     : 
+      |(Reference)      : 
+     vt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     vtm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     wcfac
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     wdfac
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     weight
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     xlat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+     xlon
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-2
+      |(Definition)     : 
+      |(Reference)      : 
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         30  execution     (Definition) 37  
+                           (Reference)  22  24
+
+ Total information
+   Procedures       : 1
+   Total lines      : 109
+   Total statements : 31
+   Total stack(byte): 0
+   Total prefetch num: 0
+
+ Include file name list
+     1 : ../include/param.h
+     2 : ../include/mpe.h
+     3 : ../include/rank.h
+     4 : ../include/index.h
+     5 : ../include/const.h
+     6 : ../include/grid.h
+     7 : ../include/spec.h
+

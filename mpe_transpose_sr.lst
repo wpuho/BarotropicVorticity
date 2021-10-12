@@ -1,0 +1,2781 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:29 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : mpe_transpose_sr.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o mpe_transpose_sr.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "mpe_transpose_sr"
+  (inc)(line-no.)(nest)(optimize)
+               1                     cfk   subroutine mpe_transpose_sr(sbuf1,rbuf1,lev,n,m,nsize)
+               2                           subroutine mpe_transpose_sr(sbuf,rbuf,lev,n,m,nsize)
+               3                     c
+               4                           include 'mpif.h'
+     1         1                     ! -*- fortran -*-
+     1         2                     !
+     1         3                     ! Copyright (c) 2004-2006 The Trustees of Indiana University and Indiana
+     1         4                     !                         University Research and Technology
+     1         5                     !                         Corporation.  All rights reserved.
+     1         6                     ! Copyright (c) 2004-2005 The University of Tennessee and The University
+     1         7                     !                         of Tennessee Research Foundation.  All rights
+     1         8                     !                         reserved.
+     1         9                     ! Copyright (c) 2004-2005 High Performance Computing Center Stuttgart,
+     1        10                     !                         University of Stuttgart.  All rights reserved.
+     1        11                     ! Copyright (c) 2004-2005 The Regents of the University of California.
+     1        12                     !                         All rights reserved.
+     1        13                     ! Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+     1        14                     ! $COPYRIGHT$
+     1        15                     !
+     1        16                     ! Additional copyrights may follow
+     1        17                     !
+     1        18                     ! $HEADER$
+     1        19                     !
+     1        20                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     1        21                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     1        22                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     1        23                     !
+     1        24                     ! Do ***not*** copy this file to the directory where your Fortran
+     1        25                     ! fortran application is compiled unless it is absolutely necessary!  Most
+     1        26                     ! modern Fortran compilers now support the -I command line flag, which
+     1        27                     ! tells the compiler where to find .h files (specifically, this one).  For
+     1        28                     ! example:
+     1        29                     !
+     1        30                     !      shell$ mpif77 foo.f -o foo -I$OMPI_HOME/include
+     1        31                     !
+     1        32                     ! will probably do the trick (assuming that you have set OMPI_HOME
+     1        33                     ! properly).
+     1        34                     !
+     1        35                     ! That being said, OMPI's "mpif77" wrapper compiler should
+     1        36                     ! automatically include the -I option for you.  The following command
+     1        37                     ! should be equivalent to the command listed above:
+     1        38                     !
+     1        39                     !      shell$ mpif77 foo.f -o foo
+     1        40                     !
+     1        41                     ! You should not copy this file to your local directory because it is
+     1        42                     ! possible that this file will be changed between versions of Open MPI.
+     1        43                     ! Indeed, this mpif.h is incompatible with the mpif.f of other
+     1        44                     ! implementations of MPI.  Using this mpif.h with other implementations
+     1        45                     ! of MPI, or with other versions of Open MPI will result in undefined
+     1        46                     ! behavior (to include incorrect results, segmentation faults,
+     1        47                     ! unexplainable "hanging" in your application, etc.).  Always use the
+     1        48                     ! -I command line option instead (or let mpif77 do it for you).
+     1        49                     !
+     1        50                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     1        51                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     1        52                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     1        53                     
+     1        54                     !
+     1        55                     !     Include the back-end file that has the bulk of the MPI Fortran
+     1        56                     !     interface.
+     1        57                     !
+     1        58                     
+     1        59                           include 'mpif-common.h'
+     2         1                     ! -*- fortran -*-
+     2         2                     !
+     2         3                     ! Copyright (c) 2004-2006 The Trustees of Indiana University and Indiana
+     2         4                     !                         University Research and Technology
+     2         5                     !                         Corporation.  All rights reserved.
+     2         6                     ! Copyright (c) 2004-2010 The University of Tennessee and The University
+     2         7                     !                         of Tennessee Research Foundation.  All rights
+     2         8                     !                         reserved.
+     2         9                     ! Copyright (c) 2004-2007 High Performance Computing Center Stuttgart,
+     2        10                     !                         University of Stuttgart.  All rights reserved.
+     2        11                     ! Copyright (c) 2004-2005 The Regents of the University of California.
+     2        12                     !                         All rights reserved.
+     2        13                     ! Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
+     2        14                     ! Copyright (c) 2009      Oak Ridge National Labs.  All rights reserved.
+     2        15                     ! $COPYRIGHT$
+     2        16                     !
+     2        17                     ! Additional copyrights may follow
+     2        18                     !
+     2        19                     ! $HEADER$
+     2        20                     !
+     2        21                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     2        22                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     2        23                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     2        24                     !
+     2        25                     ! Do ***not*** copy this file to the directory where your Fortran
+     2        26                     ! fortran application is compiled unless it is absolutely necessary!  Most
+     2        27                     ! modern Fortran compilers now support the -I command line flag, which
+     2        28                     ! tells the compiler where to find .h files (specifically, this one).  For
+     2        29                     ! example:
+     2        30                     !
+     2        31                     !      shell$ mpif77 foo.f -o foo -I$OMPI_HOME/include
+     2        32                     !
+     2        33                     ! will probably do the trick (assuming that you have set OMPI_HOME
+     2        34                     ! properly).
+     2        35                     !
+     2        36                     ! That being said, OMPI's "mpif77" wrapper compiler should
+     2        37                     ! automatically include the -I option for you.  The following command
+     2        38                     ! should be equivalent to the command listed above:
+     2        39                     !
+     2        40                     !      shell$ mpif77 foo.f -o foo
+     2        41                     !
+     2        42                     ! You should not copy this file to your local directory because it is
+     2        43                     ! possible that this file will be changed between versions of Open MPI.
+     2        44                     ! Indeed, this mpif.h is incompatible with the mpif.f of other
+     2        45                     ! implementations of MPI.  Using this mpif.h with other implementations
+     2        46                     ! of MPI, or with other versions of Open MPI will result in undefined
+     2        47                     ! behavior (to include incorrect results, segmentation faults,
+     2        48                     ! unexplainable "hanging" in your application, etc.).  Always use the
+     2        49                     ! -I command line option instead (or let mpif77 do it for you).
+     2        50                     !
+     2        51                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     2        52                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     2        53                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     2        54                     
+     2        55                     !
+     2        56                     !     This file contains the bulk of the Open MPI Fortran interface.  It
+     2        57                     !     is included as a back-end file to both mpif.h (i.e., the
+     2        58                     !     standardized MPI Fortran header file) and mpi.f90 (the MPI-2
+     2        59                     !     Fortran module source file, found in ompi/mpi/f90).
+     2        60                     !
+     2        61                     !     This file is marginally different than mpif.h.  mpif.h includes
+     2        62                     !     some "external" statements that are not suitable for use with the
+     2        63                     !     MPI-2 F90 module, and therefore cannot be included in the mpi.f90
+     2        64                     !     source file.  Hence, this file is essentially everything that
+     2        65                     !     needs to be in the standardized mpif.h *except* the "external"
+     2        66                     !     statements, and is therefore suitable to be included in mpi.f90.
+     2        67                     !
+     2        68                     
+     2        69                     !     First, however, include some output from configure.
+     2        70                     !
+     2        71                           include 'mpif-config.h'
+     3         1                     ! -*- fortran -*-
+     3         2                     !
+     3         3                     ! Copyright (c) 2004-2006 The Trustees of Indiana University and Indiana
+     3         4                     !                         University Research and Technology
+     3         5                     !                         Corporation.  All rights reserved.
+     3         6                     ! Copyright (c) 2004-2005 The University of Tennessee and The University
+     3         7                     !                         of Tennessee Research Foundation.  All rights
+     3         8                     !                         reserved.
+     3         9                     ! Copyright (c) 2004-2005 High Performance Computing Center Stuttgart,
+     3        10                     !                         University of Stuttgart.  All rights reserved.
+     3        11                     ! Copyright (c) 2004-2005 The Regents of the University of California.
+     3        12                     !                         All rights reserved.
+     3        13                     ! Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
+     3        14                     ! $COPYRIGHT$
+     3        15                     !
+     3        16                     ! Additional copyrights may follow
+     3        17                     !
+     3        18                     ! $HEADER$
+     3        19                     !
+     3        20                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     3        21                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     3        22                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     3        23                     !
+     3        24                     ! Do ***not*** copy this file to the directory where your Fortran
+     3        25                     ! fortran application is compiled unless it is absolutely necessary!  Most
+     3        26                     ! modern Fortran compilers now support the -I command line flag, which
+     3        27                     ! tells the compiler where to find .h files (specifically, this one).  For
+     3        28                     ! example:
+     3        29                     !
+     3        30                     !      shell$ mpif77 foo.f -o foo -I$OMPI_HOME/include
+     3        31                     !
+     3        32                     ! will probably do the trick (assuming that you have set OMPI_HOME
+     3        33                     ! properly).
+     3        34                     !
+     3        35                     ! That being said, OMPI's "mpif77" wrapper compiler should
+     3        36                     ! automatically include the -I option for you.  The following command
+     3        37                     ! should be equivalent to the command listed above:
+     3        38                     !
+     3        39                     !      shell$ mpif77 foo.f -o foo
+     3        40                     !
+     3        41                     ! You should not copy this file to your local directory because it is
+     3        42                     ! possible that this file will be changed between versions of Open MPI.
+     3        43                     ! Indeed, this mpif.h is incompatible with the mpif.f of other
+     3        44                     ! implementations of MPI.  Using this mpif.h with other implementations
+     3        45                     ! of MPI, or with other versions of Open MPI will result in undefined
+     3        46                     ! behavior (to include incorrect results, segmentation faults,
+     3        47                     ! unexplainable "hanging" in your application, etc.).  Always use the
+     3        48                     ! -I command line option instead (or let mpif77 do it for you).
+     3        49                     !
+     3        50                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     3        51                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     3        52                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     3        53                     
+     3        54                     !
+     3        55                     !     This file is included as a back-end file to both mpif.h (i.e., the
+     3        56                     !     standardized MPI Fortran header file) and a bunch of the MPI
+     3        57                     !     Fortran 90 subroutine implementations found in ompi/mpi/f90.
+     3        58                     !
+     3        59                     !     This file contains the output from configure that is relevant for
+     3        60                     !     Fortran applications (both 77 and 90) and a few values that are
+     3        61                     !     necessary to compile the F90 module (e.g., MPI_STATUS_SIZE).
+     3        62                     !
+     3        63                     
+     3        64                     !     Include the MPI I/O stuff, if needed
+     3        65                           include "mpif-mpi-io.h"
+     4         1                     ! -*- fortran -*-
+     4         2                     !
+     4         3                     ! Copyright (c) 2004-2006 The Trustees of Indiana University and Indiana
+     4         4                     !                         University Research and Technology
+     4         5                     !                         Corporation.  All rights reserved.
+     4         6                     ! Copyright (c) 2004-2005 The University of Tennessee and The University
+     4         7                     !                         of Tennessee Research Foundation.  All rights
+     4         8                     !                         reserved.
+     4         9                     ! Copyright (c) 2004-2005 High Performance Computing Center Stuttgart,
+     4        10                     !                         University of Stuttgart.  All rights reserved.
+     4        11                     ! Copyright (c) 2004-2005 The Regents of the University of California.
+     4        12                     !                         All rights reserved.
+     4        13                     ! Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+     4        14                     ! $COPYRIGHT$
+     4        15                     !
+     4        16                     ! Additional copyrights may follow
+     4        17                     !
+     4        18                     ! $HEADER$
+     4        19                     !
+     4        20                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     4        21                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     4        22                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     4        23                     !
+     4        24                     ! Do ***not*** copy this file to the directory where your Fortran
+     4        25                     ! fortran application is compiled unless it is absolutely necessary!  Most
+     4        26                     ! modern Fortran compilers now support the -I command line flag, which
+     4        27                     ! tells the compiler where to find .h files (specifically, this one).  For
+     4        28                     ! example:
+     4        29                     !
+     4        30                     !      shell$ mpif77 foo.f -o foo -I$OMPI_HOME/include
+     4        31                     !
+     4        32                     ! will probably do the trick (assuming that you have set OMPI_HOME
+     4        33                     ! properly).
+     4        34                     !
+     4        35                     ! That being said, OMPI's "mpif77" wrapper compiler should
+     4        36                     ! automatically include the -I option for you.  The following command
+     4        37                     ! should be equivalent to the command listed above:
+     4        38                     !
+     4        39                     !      shell$ mpif77 foo.f -o foo
+     4        40                     !
+     4        41                     ! You should not copy this file to your local directory because it is
+     4        42                     ! possible that this file will be changed between versions of Open MPI.
+     4        43                     ! Indeed, this mpif.h is incompatible with the mpif.f of other
+     4        44                     ! implementations of MPI.  Using this mpif.h with other implementations
+     4        45                     ! of MPI, or with other versions of Open MPI will result in undefined
+     4        46                     ! behavior (to include incorrect results, segmentation faults,
+     4        47                     ! unexplainable "hanging" in your application, etc.).  Always use the
+     4        48                     ! -I command line option instead (or let mpif77 do it for you).
+     4        49                     !
+     4        50                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     4        51                     ! WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+     4        52                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     4        53                     
+     4        54                     !
+     4        55                     !     This file is included as a back-end file to both mpif.h (i.e., the
+     4        56                     !     standardized MPI Fortran header file) and a bunch of the MPI
+     4        57                     !     Fortran 90 subroutine implementations found in ompi/mpi/f90.
+     4        58                     !
+     4        59                     !     This file contains the output from configure that is relevant for
+     4        60                     !     Fortran applications (both 77 and 90) and a few values that are
+     4        61                     !     necessary to compile the F90 module (e.g., MPI_STATUS_SIZE).
+     4        62                     !
+     4        63                     
+     4        64                           integer mpi_file_null
+     4        65                           integer mpi_seek_set, mpi_seek_cur, mpi_seek_end
+     4        66                           integer mpi_mode_create
+     4        67                           integer mpi_mode_rdonly, mpi_mode_wronly, mpi_mode_rdwr
+     4        68                           integer mpi_mode_delete_on_close, mpi_mode_unique_open
+     4        69                           integer mpi_mode_excl, mpi_mode_append, mpi_mode_sequential
+     4        70                           integer mpi_displacement_current
+     4        71                     
+     4        72                           parameter (mpi_file_null=0)
+     4        73                           parameter (mpi_seek_set=600)
+     4        74                           parameter (mpi_seek_cur=602)
+     4        75                           parameter (mpi_seek_end=604)
+     4        76                           parameter (mpi_mode_create=1)
+     4        77                           parameter (mpi_mode_rdonly=2)
+     4        78                           parameter (mpi_mode_wronly=4)
+     4        79                           parameter (mpi_mode_rdwr=8)
+     4        80                           parameter (mpi_mode_delete_on_close=16)
+     4        81                           parameter (mpi_mode_unique_open=32)
+     4        82                           parameter (mpi_mode_excl=64)
+     4        83                           parameter (mpi_mode_append=128)
+     4        84                           parameter (mpi_mode_sequential=256)
+     4        85                           parameter (mpi_displacement_current=-54278278)
+     3        66                     
+     3        67                     !
+     3        68                     !     OMPI version
+     3        69                     !     This file is generated from configure; do not edit it manually.
+     3        70                     !
+     3        71                           integer ompi_major_version, ompi_minor_version
+     3        72                           integer ompi_release_version
+     3        73                           character*32 ompi_greek_version
+     3        74                           character*32 ompi_svn_version
+     3        75                           parameter (ompi_major_version=1)
+     3        76                           parameter (ompi_minor_version=6)
+     3        77                           parameter (ompi_release_version=3)
+     3        78                           parameter (ompi_greek_version="rc4")
+     3        79                           parameter (ompi_svn_version="r4302")
+     3        80                     !
+     3        81                     !     Kind parameters
+     3        82                     !
+     3        83                           integer mpi_offset_kind, mpi_address_kind, mpi_integer_kind
+     3        84                           parameter (mpi_integer_kind=4)
+     3        85                           parameter (mpi_address_kind=8)
+     3        86                           parameter (mpi_offset_kind=8)
+     3        87                     !
+     3        88                     !     Miscellaneous constants
+     3        89                     !
+     3        90                           integer mpi_status_size
+     3        91                           parameter (mpi_status_size=5)
+     3        92                     !
+     3        93                     !     Configurable length constants
+     3        94                     !
+     3        95                           integer mpi_max_processor_name
+     3        96                           integer mpi_max_error_string
+     3        97                           integer mpi_max_object_name
+     3        98                           integer mpi_max_info_key
+     3        99                           integer mpi_max_info_val
+     3       100                           integer mpi_max_port_name
+     3       101                           integer mpi_max_datarep_string
+     3       102                           parameter (mpi_max_processor_name=256-1)
+     3       103                           parameter (mpi_max_error_string=256-1)
+     3       104                           parameter (mpi_max_object_name=64-1)
+     3       105                           parameter (mpi_max_info_key=36-1)
+     3       106                           parameter (mpi_max_info_val=256-1)
+     3       107                           parameter (mpi_max_port_name=1024-1)
+     3       108                           parameter (mpi_max_datarep_string=128-1)
+     2        72                     
+     2        73                     !
+     2        74                     !     MPI version
+     2        75                     !
+     2        76                           integer mpi_version, mpi_subversion
+     2        77                     
+     2        78                           parameter (mpi_version=2)
+     2        79                           parameter (mpi_subversion=2)
+     2        80                     !
+     2        81                     !     Miscellaneous constants
+     2        82                     !
+     2        83                           integer mpi_any_source, mpi_any_tag
+     2        84                           integer mpi_proc_null
+     2        85                           integer mpi_root
+     2        86                           integer mpi_undefined
+     2        87                           integer mpi_cart, mpi_graph, mpi_dist_graph
+     2        88                           integer mpi_keyval_invalid
+     2        89                           integer mpi_source, mpi_tag, mpi_error
+     2        90                           integer mpi_tag_ub, mpi_host, mpi_io, mpi_wtime_is_global
+     2        91                           integer mpi_appnum, mpi_lastusedcode, mpi_universe_size
+     2        92                           integer impi_client_size, impi_client_color
+     2        93                           integer impi_host_size, impi_host_color
+     2        94                           integer mpi_bsend_overhead
+     2        95                           integer mpi_order_c, mpi_order_fortran
+     2        96                           integer mpi_distribute_block, mpi_distribute_cyclic
+     2        97                           integer mpi_distribute_none, mpi_distribute_dflt_darg
+     2        98                           integer mpi_typeclass_integer, mpi_typeclass_real
+     2        99                           integer mpi_typeclass_complex
+     2       100                           integer mpi_mode_nocheck, mpi_mode_noprecede, mpi_mode_noput
+     2       101                           integer mpi_mode_nostore, mpi_mode_nosucceed
+     2       102                           integer mpi_lock_exclusive, mpi_lock_shared
+     2       103                           integer mpi_win_base, mpi_win_size, mpi_win_disp_unit
+     2       104                     
+     2       105                           parameter (mpi_any_source=-1)
+     2       106                           parameter (mpi_any_tag=-1)
+     2       107                           parameter (mpi_proc_null=-2)
+     2       108                           parameter (mpi_root=-4)
+     2       109                           parameter (mpi_undefined=-32766)
+     2       110                           parameter (mpi_cart=1)
+     2       111                           parameter (mpi_graph=2)
+     2       112                           parameter (mpi_dist_graph=3)
+     2       113                           parameter (mpi_keyval_invalid=-1)
+     2       114                           parameter (mpi_source=1)
+     2       115                           parameter (mpi_tag=2)
+     2       116                           parameter (mpi_error=3)
+     2       117                           parameter (mpi_tag_ub=0)
+     2       118                           parameter (mpi_host=1)
+     2       119                           parameter (mpi_io=2)
+     2       120                           parameter (mpi_wtime_is_global=3)
+     2       121                           parameter (mpi_appnum=4)
+     2       122                           parameter (mpi_lastusedcode=5)
+     2       123                           parameter (mpi_universe_size=6)
+     2       124                           parameter (mpi_win_base=7)
+     2       125                           parameter (mpi_win_size=8)
+     2       126                           parameter (mpi_win_disp_unit=9)
+     2       127                           parameter (impi_client_size=10)
+     2       128                           parameter (impi_client_color=11)
+     2       129                           parameter (impi_host_size=12)
+     2       130                           parameter (impi_host_color=13)
+     2       131                     
+     2       132                           parameter (mpi_bsend_overhead=128)
+     2       133                           parameter (mpi_order_c=0)
+     2       134                           parameter (mpi_order_fortran=1)
+     2       135                           parameter (mpi_distribute_block=0)
+     2       136                           parameter (mpi_distribute_cyclic=1)
+     2       137                           parameter (mpi_distribute_none=2)
+     2       138                           parameter (mpi_distribute_dflt_darg=-1)
+     2       139                           parameter (mpi_typeclass_integer=1)
+     2       140                           parameter (mpi_typeclass_real=2)
+     2       141                           parameter (mpi_typeclass_complex=3)
+     2       142                           parameter (mpi_mode_nocheck=1)
+     2       143                           parameter (mpi_mode_noprecede=2)
+     2       144                           parameter (mpi_mode_noput=4)
+     2       145                           parameter (mpi_mode_nostore=8)
+     2       146                           parameter (mpi_mode_nosucceed=16)
+     2       147                           parameter (mpi_lock_exclusive=1)
+     2       148                           parameter (mpi_lock_shared=2)
+     2       149                     
+     2       150                     !
+     2       151                     !     MPI sentinel values
+     2       152                     !
+     2       153                     !     Several of these types were chosen with care to match specific
+     2       154                     !     overloaded functions in the F90 bindings.  They should also match
+     2       155                     !     the types of their corresponding C variables.  Do not arbitrarily
+     2       156                     !     change their types without also updating the F90 bindings and
+     2       157                     !     their corresponding types in ompi/mpi/f77/constants.h and
+     2       158                     !     ompi/mpi/runtime/ompi_init.c!
+     2       159                     !
+     2       160                     !     MPI_BOTTOM is only used where choice buffers can be used (meaning
+     2       161                     !     that we already have overloaded F90 bindings for all available
+     2       162                     !     types), so any type is fine.
+     2       163                           integer mpi_bottom
+     2       164                     !     MPI_IN_PLACE has the same rationale as MPI_BOTTOM.
+     2       165                           integer mpi_in_place
+     2       166                           integer mpi_unweighted(1)
+     2       167                     !     Making MPI_ARGV_NULL be the same type as the parameter that is
+     2       168                     !     exepected in the F90 binding for MPI_COMM_SPAWN means that we
+     2       169                     !     don't need another binding for MPI_COMM_SPAWN.
+     2       170                           character mpi_argv_null(1)
+     2       171                     !     The array_of_argv parameter in the F90 bindings for
+     2       172                     !     MPI_COMM_SPAWN_MULTIPLE takes a variable number of dimensions
+     2       173                     !     (specified by the "count" parameter), so it's not possible to have
+     2       174                     !     a single variable match all possible values.  Hence, make it an
+     2       175                     !     entirely different type (one that would never likely be used by a
+     2       176                     !     correct program, e.g., double) and have a separate F90 binding for
+     2       177                     !     matching just this type.
+     2       178                           double precision mpi_argvs_null
+     2       179                     !     MPI_ERRCODES_IGNORE has similar rationale to MPI_ARGV_NULL.  The
+     2       180                     !     F77 functions are all smart enough to check that the errcodes
+     2       181                     !     parameter is not ERRCODES_IGNORE before assigning values into it
+     2       182                     !     (hence, the fact that this is an array of only 1 element does not
+     2       183                     !     matter -- we'll never overrun it because we never assign values
+     2       184                     !     into it).
+     2       185                           integer mpi_errcodes_ignore(1)
+     2       186                     !     MPI_STATUS_IGNORE has similar rationale to MPI_ERRCODES_IGNORE.
+     2       187                           integer mpi_status_ignore(mpi_status_size)
+     2       188                     !     MPI_STATUSES_IGNORE has similar rationale to MPI_ARGVS_NULL.
+     2       189                           double precision mpi_statuses_ignore
+     2       190                     
+     2       191                           common/mpi_fortran_bottom/mpi_bottom
+     2       192                           common/mpi_fortran_in_place/mpi_in_place
+     2       193                           common/mpi_fortran_unweighted/mpi_unweighted
+     2       194                           common/mpi_fortran_argv_null/mpi_argv_null
+     2       195                           common/mpi_fortran_argvs_null/mpi_argvs_null
+     2       196                           common/mpi_fortran_errcodes_ignore/mpi_errcodes_ignore
+     2       197                           common/mpi_fortran_status_ignore/mpi_status_ignore
+     2       198                           common/mpi_fortran_statuses_ignore/mpi_statuses_ignore
+     2       199                     !
+     2       200                     !     NULL "handles" (indices)
+     2       201                     !
+     2       202                           integer mpi_group_null, mpi_comm_null, mpi_datatype_null
+     2       203                           integer mpi_request_null, mpi_op_null, mpi_errhandler_null
+     2       204                           integer mpi_info_null, mpi_win_null, mpi_message_null
+     2       205                     
+     2       206                           parameter (mpi_group_null=0)
+     2       207                           parameter (mpi_comm_null=2)
+     2       208                           parameter (mpi_datatype_null=0)
+     2       209                           parameter (mpi_request_null=0)
+     2       210                           parameter (mpi_op_null=0)
+     2       211                           parameter (mpi_errhandler_null=0)
+     2       212                           parameter (mpi_info_null=0)
+     2       213                           parameter (mpi_win_null=0)
+     2       214                           parameter (mpi_message_null=0)
+     2       215                     !
+     2       216                     !     MPI_Init_thread constants
+     2       217                     !
+     2       218                           integer mpi_thread_single, mpi_thread_funneled
+     2       219                           integer mpi_thread_serialized, mpi_thread_multiple
+     2       220                     
+     2       221                           parameter (mpi_thread_single=0)
+     2       222                           parameter (mpi_thread_funneled=1)
+     2       223                           parameter (mpi_thread_serialized=2)
+     2       224                           parameter (mpi_thread_multiple=3)
+     2       225                     !
+     2       226                     !     error classes
+     2       227                     !
+     2       228                           integer mpi_success
+     2       229                           integer mpi_err_buffer
+     2       230                           integer mpi_err_count
+     2       231                           integer mpi_err_type
+     2       232                           integer mpi_err_tag
+     2       233                           integer mpi_err_comm
+     2       234                           integer mpi_err_rank
+     2       235                           integer mpi_err_request
+     2       236                           integer mpi_err_root
+     2       237                           integer mpi_err_group
+     2       238                           integer mpi_err_op
+     2       239                           integer mpi_err_topology
+     2       240                           integer mpi_err_dims
+     2       241                           integer mpi_err_arg
+     2       242                           integer mpi_err_unknown
+     2       243                           integer mpi_err_truncate
+     2       244                           integer mpi_err_other
+     2       245                           integer mpi_err_intern
+     2       246                           integer mpi_err_in_status
+     2       247                           integer mpi_err_pending
+     2       248                           integer mpi_err_access
+     2       249                           integer mpi_err_amode
+     2       250                           integer mpi_err_assert
+     2       251                           integer mpi_err_bad_file
+     2       252                           integer mpi_err_base
+     2       253                           integer mpi_err_conversion
+     2       254                           integer mpi_err_disp
+     2       255                           integer mpi_err_dup_datarep
+     2       256                           integer mpi_err_file_exists
+     2       257                           integer mpi_err_file_in_use
+     2       258                           integer mpi_err_file
+     2       259                           integer mpi_err_info_key
+     2       260                           integer mpi_err_info_nokey
+     2       261                           integer mpi_err_info_value
+     2       262                           integer mpi_err_info
+     2       263                           integer mpi_err_io
+     2       264                           integer mpi_err_keyval
+     2       265                           integer mpi_err_locktype
+     2       266                           integer mpi_err_name
+     2       267                           integer mpi_err_no_mem
+     2       268                           integer mpi_err_not_same
+     2       269                           integer mpi_err_no_space
+     2       270                           integer mpi_err_no_such_file
+     2       271                           integer mpi_err_port
+     2       272                           integer mpi_err_quota
+     2       273                           integer mpi_err_read_only
+     2       274                           integer mpi_err_rma_conflict
+     2       275                           integer mpi_err_rma_sync
+     2       276                           integer mpi_err_service
+     2       277                           integer mpi_err_size
+     2       278                           integer mpi_err_spawn
+     2       279                           integer mpi_err_unsupported_datarep
+     2       280                           integer mpi_err_unsupported_operation
+     2       281                           integer mpi_err_win
+     2       282                     
+     2       283                           integer mpi_err_sysresource
+     2       284                           integer mpi_err_lastcode
+     2       285                     
+     2       286                           parameter( mpi_success                  = 0)
+     2       287                           parameter( mpi_err_buffer               = 1)
+     2       288                           parameter( mpi_err_count                = 2)
+     2       289                           parameter( mpi_err_type                 = 3)
+     2       290                           parameter( mpi_err_tag                  = 4)
+     2       291                           parameter( mpi_err_comm                 = 5)
+     2       292                           parameter( mpi_err_rank                 = 6)
+     2       293                           parameter( mpi_err_request              = 7)
+     2       294                           parameter( mpi_err_root                 = 8)
+     2       295                           parameter( mpi_err_group                = 9)
+     2       296                           parameter( mpi_err_op                   = 10)
+     2       297                           parameter( mpi_err_topology             = 11)
+     2       298                           parameter( mpi_err_dims                 = 12)
+     2       299                           parameter( mpi_err_arg                  = 13)
+     2       300                           parameter( mpi_err_unknown              = 14)
+     2       301                           parameter( mpi_err_truncate             = 15)
+     2       302                           parameter( mpi_err_other                = 16)
+     2       303                           parameter( mpi_err_intern               = 17)
+     2       304                           parameter( mpi_err_in_status            = 18)
+     2       305                           parameter( mpi_err_pending              = 19)
+     2       306                           parameter( mpi_err_access               = 20)
+     2       307                           parameter( mpi_err_amode                = 21)
+     2       308                           parameter( mpi_err_assert               = 22)
+     2       309                           parameter( mpi_err_bad_file             = 23)
+     2       310                           parameter( mpi_err_base                 = 24)
+     2       311                           parameter( mpi_err_conversion           = 25)
+     2       312                           parameter( mpi_err_disp                 = 26)
+     2       313                           parameter( mpi_err_dup_datarep          = 27)
+     2       314                           parameter( mpi_err_file_exists          = 28)
+     2       315                           parameter( mpi_err_file_in_use          = 29)
+     2       316                           parameter( mpi_err_file                 = 30)
+     2       317                           parameter( mpi_err_info_key             = 31)
+     2       318                           parameter( mpi_err_info_nokey           = 32)
+     2       319                           parameter( mpi_err_info_value           = 33)
+     2       320                           parameter( mpi_err_info                 = 34)
+     2       321                           parameter( mpi_err_io                   = 35)
+     2       322                           parameter( mpi_err_keyval               = 36)
+     2       323                           parameter( mpi_err_locktype             = 37)
+     2       324                           parameter( mpi_err_name                 = 38)
+     2       325                           parameter( mpi_err_no_mem               = 39)
+     2       326                           parameter( mpi_err_not_same             = 40)
+     2       327                           parameter( mpi_err_no_space             = 41)
+     2       328                           parameter( mpi_err_no_such_file         = 42)
+     2       329                           parameter( mpi_err_port                 = 43)
+     2       330                           parameter( mpi_err_quota                = 44)
+     2       331                           parameter( mpi_err_read_only            = 45)
+     2       332                           parameter( mpi_err_rma_conflict         = 46)
+     2       333                           parameter( mpi_err_rma_sync             = 47)
+     2       334                           parameter( mpi_err_service              = 48)
+     2       335                           parameter( mpi_err_size                 = 49)
+     2       336                           parameter( mpi_err_spawn                = 50)
+     2       337                           parameter( mpi_err_unsupported_datarep  = 51)
+     2       338                           parameter( mpi_err_unsupported_operation= 52)
+     2       339                           parameter( mpi_err_win                  = 53)
+     2       340                     
+     2       341                           parameter( mpi_err_sysresource          = -2)
+     2       342                           parameter( mpi_err_lastcode             = 54)
+     2       343                     
+     2       344                     !
+     2       345                     !     comparison results
+     2       346                     !
+     2       347                           integer mpi_ident, mpi_congruent, mpi_similar, mpi_unequal
+     2       348                     
+     2       349                           parameter (mpi_ident=0)
+     2       350                           parameter (mpi_congruent=1)
+     2       351                           parameter (mpi_similar=2)
+     2       352                           parameter (mpi_unequal=3)
+     2       353                     !
+     2       354                     !     datatype combiners
+     2       355                     !
+     2       356                           integer mpi_combiner_named
+     2       357                           integer mpi_combiner_dup
+     2       358                           integer mpi_combiner_contiguous
+     2       359                           integer mpi_combiner_vector
+     2       360                           integer mpi_combiner_hvector_integer
+     2       361                           integer mpi_combiner_hvector
+     2       362                           integer mpi_combiner_indexed
+     2       363                           integer mpi_combiner_hindexed_integer
+     2       364                           integer mpi_combiner_hindexed
+     2       365                           integer mpi_combiner_indexed_block
+     2       366                           integer mpi_combiner_struct_integer
+     2       367                           integer mpi_combiner_struct
+     2       368                           integer mpi_combiner_subarray
+     2       369                           integer mpi_combiner_darray
+     2       370                           integer mpi_combiner_f90_real
+     2       371                           integer mpi_combiner_f90_complex
+     2       372                           integer mpi_combiner_f90_integer
+     2       373                           integer mpi_combiner_resized
+     2       374                           integer mpi_combiner_hindexed_block
+     2       375                     
+     2       376                           parameter (mpi_combiner_named=0)
+     2       377                           parameter (mpi_combiner_dup=1)
+     2       378                           parameter (mpi_combiner_contiguous=2)
+     2       379                           parameter (mpi_combiner_vector=3)
+     2       380                           parameter (mpi_combiner_hvector_integer=4)
+     2       381                           parameter (mpi_combiner_hvector=5)
+     2       382                           parameter (mpi_combiner_indexed=6)
+     2       383                           parameter (mpi_combiner_hindexed_integer=7)
+     2       384                           parameter (mpi_combiner_hindexed=8)
+     2       385                           parameter (mpi_combiner_indexed_block=9)
+     2       386                           parameter (mpi_combiner_struct_integer=10)
+     2       387                           parameter (mpi_combiner_struct=11)
+     2       388                           parameter (mpi_combiner_subarray=12)
+     2       389                           parameter (mpi_combiner_darray=13)
+     2       390                           parameter (mpi_combiner_f90_real=14)
+     2       391                           parameter (mpi_combiner_f90_complex=15)
+     2       392                           parameter (mpi_combiner_f90_integer=16)
+     2       393                           parameter (mpi_combiner_resized=17)
+     2       394                           parameter (mpi_combiner_hindexed_block=18)
+     2       395                     !
+     2       396                     !     lookup table indices
+     2       397                     !
+     2       398                           integer mpi_comm_world, mpi_comm_self
+     2       399                           integer mpi_group_empty
+     2       400                           integer mpi_errors_are_fatal, mpi_errors_return
+     2       401                           integer mpi_message_no_proc
+     2       402                     
+     2       403                           parameter (mpi_comm_world=0)
+     2       404                           parameter (mpi_comm_self=1)
+     2       405                           parameter (mpi_group_empty=1)
+     2       406                           parameter (mpi_errors_are_fatal=1)
+     2       407                           parameter (mpi_errors_return=2)
+     2       408                           parameter (mpi_message_no_proc=1)
+     2       409                     
+     2       410                           integer mpi_byte, mpi_packed, mpi_ub, mpi_lb
+     2       411                           integer mpi_character, mpi_logical
+     2       412                           integer mpi_integer, mpi_integer1, mpi_integer2, mpi_integer4
+     2       413                           integer mpi_integer8, mpi_integer16
+     2       414                           integer mpi_real, mpi_real2, mpi_real4, mpi_real8, mpi_real16
+     2       415                           integer mpi_double_precision
+     2       416                           integer mpi_complex, mpi_complex8, mpi_complex16, mpi_complex32
+     2       417                           integer mpi_double_complex
+     2       418                           integer mpi_2real, mpi_2double_precision, mpi_2integer
+     2       419                           integer mpi_2complex, mpi_2double_complex
+     2       420                     ! Note that MPI_LOGICALx are not defined by the MPI spec, but there are
+     2       421                     ! other MPI implementations that have them, so it's good for us to have
+     2       422                     ! as well.
+     2       423                           integer mpi_logical1, mpi_logical2, mpi_logical4, mpi_logical8
+     2       424                     ! All other MPI types including the C and C++, as well as the
+     2       425                     ! ones defined in the MPI 2.2
+     2       426                           integer mpi_wchar, mpi_char
+     2       427                           integer mpi_signed_char, mpi_unsigned_char
+     2       428                           integer mpi_short, mpi_unsigned_short
+     2       429                           integer mpi_int, mpi_unsigned, mpi_long
+     2       430                           integer mpi_unsigned_long, mpi_long_long_int
+     2       431                           integer mpi_unsigned_long_long
+     2       432                           integer mpi_float, mpi_double, mpi_long_double
+     2       433                           integer mpi_float_int, mpi_double_int
+     2       434                           integer mpi_longdbl_int, mpi_long_int
+     2       435                           integer mpi_2int, mpi_short_int
+     2       436                           integer mpi_cxx_bool, mpi_cxx_float_complex
+     2       437                           integer mpi_cxx_double_complex, mpi_cxx_long_double_complex
+     2       438                           integer mpi_int8_t, mpi_uint8_t
+     2       439                           integer mpi_int16_t, mpi_uint16_t
+     2       440                           integer mpi_int32_t, mpi_uint32_t
+     2       441                           integer mpi_int64_t, mpi_uint64_t
+     2       442                           integer mpi_aint, mpi_offset, mpi_c_bool
+     2       443                           integer mpi_c_complex, mpi_c_float_complex
+     2       444                           integer mpi_c_double_complex, mpi_c_long_double_complex
+     2       445                           integer mpi_count
+     2       446                     !
+     2       447                     !     Do NOT change the order of these parameters
+     2       448                     !
+     2       449                           parameter (mpi_byte               =  1)
+     2       450                           parameter (mpi_packed             =  2)
+     2       451                           parameter (mpi_ub                 =  3)
+     2       452                           parameter (mpi_lb                 =  4)
+     2       453                           parameter (mpi_character          =  5)
+     2       454                           parameter (mpi_logical            =  6)
+     2       455                           parameter (mpi_integer            =  7)
+     2       456                           parameter (mpi_integer1           =  8)
+     2       457                           parameter (mpi_integer2           =  9)
+     2       458                           parameter (mpi_integer4           = 10)
+     2       459                           parameter (mpi_integer8           = 11)
+     2       460                           parameter (mpi_integer16          = 12)
+     2       461                           parameter (mpi_real               = 13)
+     2       462                           parameter (mpi_real4              = 14)
+     2       463                           parameter (mpi_real8              = 15)
+     2       464                           parameter (mpi_real16             = 16)
+     2       465                           parameter (mpi_double_precision   = 17)
+     2       466                           parameter (mpi_complex            = 18)
+     2       467                           parameter (mpi_complex8           = 19)
+     2       468                           parameter (mpi_complex16          = 20)
+     2       469                           parameter (mpi_complex32          = 21)
+     2       470                           parameter (mpi_double_complex     = 22)
+     2       471                           parameter (mpi_2real              = 23)
+     2       472                           parameter (mpi_2double_precision  = 24)
+     2       473                           parameter (mpi_2integer           = 25)
+     2       474                           parameter (mpi_2complex           = 26)
+     2       475                           parameter (mpi_2double_complex    = 27)
+     2       476                           parameter (mpi_real2              = 28)
+     2       477                           parameter (mpi_logical1           = 29)
+     2       478                           parameter (mpi_logical2           = 30)
+     2       479                           parameter (mpi_logical4           = 31)
+     2       480                           parameter (mpi_logical8           = 32)
+     2       481                           parameter (mpi_wchar              = 33)
+     2       482                           parameter (mpi_char               = 34)
+     2       483                           parameter (mpi_unsigned_char      = 35)
+     2       484                           parameter (mpi_signed_char        = 36)
+     2       485                           parameter (mpi_short              = 37)
+     2       486                           parameter (mpi_unsigned_short     = 38)
+     2       487                           parameter (mpi_int                = 39)
+     2       488                           parameter (mpi_unsigned           = 40)
+     2       489                           parameter (mpi_long               = 41)
+     2       490                           parameter (mpi_unsigned_long      = 42)
+     2       491                           parameter (mpi_long_long_int      = 43)
+     2       492                           parameter (mpi_unsigned_long_long = 44)
+     2       493                           parameter (mpi_float              = 45)
+     2       494                           parameter (mpi_double             = 46)
+     2       495                           parameter (mpi_long_double        = 47)
+     2       496                           parameter (mpi_float_int          = 48)
+     2       497                           parameter (mpi_double_int         = 49)
+     2       498                           parameter (mpi_longdbl_int        = 50)
+     2       499                           parameter (mpi_long_int           = 51)
+     2       500                           parameter (mpi_2int               = 52)
+     2       501                           parameter (mpi_short_int          = 53)
+     2       502                           parameter (mpi_cxx_bool           = 54)
+     2       503                           parameter (mpi_cxx_float_complex  = 55)
+     2       504                           parameter (mpi_cxx_double_complex = 56)
+     2       505                           parameter (mpi_cxx_long_double_complex = 57)
+     2       506                           parameter (mpi_int8_t             = 58)
+     2       507                           parameter (mpi_uint8_t            = 59)
+     2       508                           parameter (mpi_int16_t            = 60)
+     2       509                           parameter (mpi_uint16_t           = 61)
+     2       510                           parameter (mpi_int32_t            = 62)
+     2       511                           parameter (mpi_uint32_t           = 63)
+     2       512                           parameter (mpi_int64_t            = 64)
+     2       513                           parameter (mpi_uint64_t           = 65)
+     2       514                           parameter (mpi_aint               = 66)
+     2       515                           parameter (mpi_offset             = 67)
+     2       516                           parameter (mpi_c_complex          = 68)
+     2       517                           parameter (mpi_c_float_complex    = 69)
+     2       518                           parameter (mpi_c_double_complex   = 70)
+     2       519                           parameter (mpi_c_long_double_complex = 71)
+     2       520                           parameter (mpi_count              = 72)
+     2       521                           parameter (mpi_c_bool             = 73)
+     2       522                     
+     2       523                           integer mpi_max, mpi_min, mpi_sum, mpi_prod, mpi_land
+     2       524                           integer mpi_band, mpi_lor, mpi_bor, mpi_lxor, mpi_bxor
+     2       525                           integer mpi_maxloc, mpi_minloc, mpi_replace
+     2       526                     
+     2       527                           parameter (mpi_max=1)
+     2       528                           parameter (mpi_min=2)
+     2       529                           parameter (mpi_sum=3)
+     2       530                           parameter (mpi_prod=4)
+     2       531                           parameter (mpi_land=5)
+     2       532                           parameter (mpi_band=6)
+     2       533                           parameter (mpi_lor=7)
+     2       534                           parameter (mpi_bor=8)
+     2       535                           parameter (mpi_lxor=9)
+     2       536                           parameter (mpi_bxor=10)
+     2       537                           parameter (mpi_maxloc=11)
+     2       538                           parameter (mpi_minloc=12)
+     2       539                           parameter (mpi_replace=13)
+     1        60                     
+     1        61                     !
+     1        62                     !     These "external" statements are specific to the MPI F77 interface
+     1        63                     !     (and are toxic to the MPI F90 interface), and are therefore in the
+     1        64                     !     MPI F77-specific header file (i.e., this one).
+     1        65                     !
+     1        66                           external mpi_null_copy_fn, mpi_null_delete_fn
+     1        67                           external mpi_comm_null_copy_fn, mpi_comm_null_delete_fn
+     1        68                           external mpi_type_null_copy_fn, mpi_type_null_delete_fn
+     1        69                           external mpi_dup_fn, mpi_comm_dup_fn, mpi_type_dup_fn
+     1        70                           external mpi_win_null_copy_fn
+     1        71                           external mpi_win_null_delete_fn
+     1        72                           external mpi_win_dup_fn
+     1        73                     !     Note that MPI_CONVERSION_FN_NULL is a "constant" (it is only ever
+     1        74                     !     checked for comparison; it is never invoked), but it is passed as
+     1        75                     !     a function pointer (to MPI_REGISTER_DATAREP) and therefore must be
+     1        76                     !     the same size/type.  It is therefore external'ed here, and not
+     1        77                     !     defined with an integer value in mpif-common.h.
+     1        78                           external mpi_conversion_fn_null
+     1        79                     
+     1        80                     !
+     1        81                     !     double precision functions
+     1        82                     !
+     1        83                           external mpi_wtime, mpi_wtick , pmpi_wtick, pmpi_wtime
+     1        84                           double precision mpi_wtime, mpi_wtick , pmpi_wtick, pmpi_wtime
+     1        85                     
+               5                           real sbuf (lev,n,m*nsize)
+               6                           real rwork(lev,n,m,nsize)
+               7                           real rbuf (lev,n,nsize,m)
+               8                     c
+               9                     c
+              10                           len_tr=m*n
+              11                     c
+              12                     ccc add on 2002/6/27
+              13                           call MPI_BARRIER(MPI_COMM_WORLD, IERR)
+              14                     c
+              15                           call MPI_ALLTOALL( SBUF,  LEN_TR*LEV, MPI_DOUBLE_PRECISION,
+              16                          &                   RWORK, LEN_TR*LEV, MPI_DOUBLE_PRECISION,
+              17                          &                   MPI_COMM_WORLD, IERR )
+              18                     c
+              19     1                     do j=1,m
+              20     2                     do ii=1,nsize
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              21     3       8v            do i=1,n
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<< Loop-information  End >>>
+              22     4       8v            do k=1,lev
+              23     4       8v              rbuf(k,i,ii,j)=rwork(k,i,j,ii)
+              24     4       8v            enddo
+              25     3       8v            enddo
+              26     2                     enddo
+              27     1                     enddo
+              28                     c
+              29                           return
+              30                           end
+              31                     c
+
+ Diagnostic messages: program name(mpe_transpose_sr)
+   jwd6002s-i  "mpe_transpose_sr.f", line 21: SIMD conversion is applied to DO loop.
+   jwd8204o-i  "mpe_transpose_sr.f", line 21: This loop is software pipelined.
+   jwd8205o-i  "mpe_transpose_sr.f", line 21: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8330o-i  "mpe_transpose_sr.f", line 23: Nested DO loops were coalesced into a single loop by DO variables i,...,k.
+
+ Procedure information
+   Lines      : 848
+   Statements : 464
+   Stack(byte): 16
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : mpe_transpose_sr
+   Attribute and Cross reference of name
+     IERR
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 13  15
+      |(Reference)      : 
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 21
+      |(Reference)      : 23  23
+     ii
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 20
+      |(Reference)      : 23  23
+     impi_client_color
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-92  2-128
+      |(Definition)     : 
+      |(Reference)      : 
+     impi_client_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-92  2-127
+      |(Definition)     : 
+      |(Reference)      : 
+     impi_host_color
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-93  2-130
+      |(Definition)     : 
+      |(Reference)      : 
+     impi_host_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-93  2-129
+      |(Definition)     : 
+      |(Reference)      : 
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 19
+      |(Reference)      : 23  23
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 22
+      |(Reference)      : 23  23
+     len_tr
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 10
+      |(Reference)      : 15  15
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 5  6  7  15  15  22
+     MPI_ALLTOALL
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 15
+     MPI_BARRIER
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 13
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 5  6  7  10  19
+     mpe_transpose_sr
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 2
+      |(Reference)      : 
+     mpi_2complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-419  2-474
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_2double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-419  2-475
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_2double_precision
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-418  2-472
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_2int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-435  2-500
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_2integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-418  2-473
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_2real
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-418  2-471
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_address_kind
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-83  3-85
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_aint
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-442  2-514
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_any_source
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-83  2-105
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_any_tag
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-83  2-106
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_appnum
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-91  2-121
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_argv_null
+      |(Class and Type) : variable name, CHARACTER(1,1)
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 2-170  2-194
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_argvs_null
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-178  2-195
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_band
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-524  2-532
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_bor
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-524  2-534
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_bottom
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-163  2-191
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_bsend_overhead
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-94  2-132
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_bxor
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-524  2-536
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_byte
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-410  2-449
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_c_bool
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-442  2-521
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_c_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-443  2-516
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_c_double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-444  2-518
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_c_float_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-443  2-517
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_c_long_double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-444  2-519
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_cart
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-87  2-110
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_char
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-426  2-482
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_character
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-411  2-453
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_contiguous
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-358  2-378
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_darray
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-369  2-389
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_dup
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-357  2-377
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_f90_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-371  2-391
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_f90_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-372  2-392
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_f90_real
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-370  2-390
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_hindexed
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-364  2-384
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_hindexed_block
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-374  2-394
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_hindexed_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-363  2-383
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_hvector
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-361  2-381
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_hvector_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-360  2-380
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_indexed
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-362  2-382
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_indexed_block
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-365  2-385
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_named
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-356  2-376
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_resized
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-373  2-393
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_struct
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-367  2-387
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_struct_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-366  2-386
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_subarray
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-368  2-388
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_combiner_vector
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-359  2-379
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_dup_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-69
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-202  2-207
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_null_copy_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-67
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_null_delete_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-67
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_self
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-398  2-404
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_comm_world
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-398  2-403
+      |(Definition)     : 
+      |(Reference)      : 13  15
+     mpi_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-416  2-466
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_complex16
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-416  2-468
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_complex32
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-416  2-469
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_complex8
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-416  2-467
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_congruent
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-347  2-350
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_conversion_fn_null
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-78
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_count
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-445  2-520
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_cxx_bool
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-436  2-502
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_cxx_double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-437  2-504
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_cxx_float_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-436  2-503
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_cxx_long_double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-437  2-505
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_datatype_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-202  2-208
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_displacement_current
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-70  4-85
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_dist_graph
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-87  2-112
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_distribute_block
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-96  2-135
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_distribute_cyclic
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-96  2-136
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_distribute_dflt_darg
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-97  2-138
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_distribute_none
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-97  2-137
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_double
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-432  2-494
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_double_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-417  2-470
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_double_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-433  2-497
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_double_precision
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-415  2-465
+      |(Definition)     : 
+      |(Reference)      : 15  15
+     mpi_dup_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-69
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_access
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-248  2-306
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_amode
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-249  2-307
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_arg
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-241  2-299
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_assert
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-250  2-308
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_bad_file
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-251  2-309
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_base
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-252  2-310
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_buffer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-229  2-287
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_comm
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-233  2-291
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_conversion
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-253  2-311
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_count
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-230  2-288
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_dims
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-240  2-298
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_disp
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-254  2-312
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_dup_datarep
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-255  2-313
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_file
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-258  2-316
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_file_exists
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-256  2-314
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_file_in_use
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-257  2-315
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_group
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-237  2-295
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_in_status
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-246  2-304
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_info
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-262  2-320
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_info_key
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-259  2-317
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_info_nokey
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-260  2-318
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_info_value
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-261  2-319
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_intern
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-245  2-303
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_io
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-263  2-321
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_keyval
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-264  2-322
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_lastcode
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-284  2-342
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_locktype
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-265  2-323
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_name
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-266  2-324
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_no_mem
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-267  2-325
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_no_space
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-269  2-327
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_no_such_file
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-270  2-328
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_not_same
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-268  2-326
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_op
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-238  2-296
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_other
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-244  2-302
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_pending
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-247  2-305
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_port
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-271  2-329
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_quota
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-272  2-330
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_rank
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-234  2-292
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_read_only
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-273  2-331
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_request
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-235  2-293
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_rma_conflict
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-274  2-332
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_rma_sync
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-275  2-333
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_root
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-236  2-294
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_service
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-276  2-334
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-277  2-335
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_spawn
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-278  2-336
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_sysresource
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-283  2-341
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_tag
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-232  2-290
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_topology
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-239  2-297
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_truncate
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-243  2-301
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_type
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-231  2-289
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_unknown
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-242  2-300
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_unsupported_datarep
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-279  2-337
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_unsupported_operation
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-280  2-338
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_err_win
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-281  2-339
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_errcodes_ignore
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 2-185  2-196
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_errhandler_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-203  2-211
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_error
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-89  2-116
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_errors_are_fatal
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-400  2-406
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_errors_return
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-400  2-407
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_file_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-64  4-72
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_float
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-432  2-493
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_float_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-433  2-496
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_argv_null
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-194
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_argvs_null
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-195
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_bottom
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-191
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_errcodes_ignore
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-196
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_in_place
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-192
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_status_ignore
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-197
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_statuses_ignore
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-198
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_fortran_unweighted
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-193
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_graph
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-87  2-111
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_group_empty
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-399  2-405
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_group_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-202  2-206
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_host
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-90  2-118
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_ident
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-347  2-349
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_in_place
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-165  2-192
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_info_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-204  2-212
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-429  2-487
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_int16_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-439  2-508
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_int32_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-440  2-510
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_int64_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-441  2-512
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_int8_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-438  2-506
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-412  2-455
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer1
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-412  2-456
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer16
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-413  2-460
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer2
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-412  2-457
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer4
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-412  2-458
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer8
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-413  2-459
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_integer_kind
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-83  3-84
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_io
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-90  2-119
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_keyval_invalid
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-88  2-113
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_land
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-523  2-531
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lastusedcode
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-91  2-122
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lb
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-410  2-452
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lock_exclusive
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-102  2-147
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lock_shared
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-102  2-148
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_logical
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-411  2-454
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_logical1
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-423  2-477
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_logical2
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-423  2-478
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_logical4
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-423  2-479
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_logical8
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-423  2-480
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_long
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-429  2-489
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_long_double
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-432  2-495
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_long_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-434  2-499
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_long_long_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-430  2-491
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_longdbl_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-434  2-498
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lor
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-524  2-533
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_lxor
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-524  2-535
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-523  2-527
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_datarep_string
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-101  3-108
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_error_string
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-96  3-103
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_info_key
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-98  3-105
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_info_val
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-99  3-106
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_object_name
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-97  3-104
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_port_name
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-100  3-107
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_max_processor_name
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-95  3-102
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_maxloc
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-525  2-537
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_message_no_proc
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-401  2-408
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_message_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-204  2-214
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_min
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-523  2-528
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_minloc
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-525  2-538
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_append
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-69  4-83
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_create
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-66  4-76
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_delete_on_close
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-68  4-80
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_excl
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-69  4-82
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_nocheck
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-100  2-142
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_noprecede
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-100  2-143
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_noput
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-100  2-144
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_nostore
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-101  2-145
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_nosucceed
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-101  2-146
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_rdonly
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-67  4-77
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_rdwr
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-67  4-79
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_sequential
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-69  4-84
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_unique_open
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-68  4-81
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_mode_wronly
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-67  4-78
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_null_copy_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-66
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_null_delete_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-66
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_offset
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-442  2-515
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_offset_kind
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-83  3-86
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_op_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-203  2-210
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_order_c
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-95  2-133
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_order_fortran
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-95  2-134
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_packed
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-410  2-450
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_proc_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-84  2-107
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_prod
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-523  2-530
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_real
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-414  2-461
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_real16
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-414  2-464
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_real2
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-414  2-476
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_real4
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-414  2-462
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_real8
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-414  2-463
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_replace
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-525  2-539
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_request_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-203  2-209
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_root
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-85  2-108
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_seek_cur
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-65  4-74
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_seek_end
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-65  4-75
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_seek_set
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 4-65  4-73
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_short
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-428  2-485
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_short_int
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-435  2-501
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_signed_char
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-427  2-484
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_similar
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-347  2-351
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_source
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-89  2-114
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_status_ignore
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 2-187  2-197
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_status_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-90  3-91
+      |(Definition)     : 
+      |(Reference)      : 2-187
+     mpi_statuses_ignore
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-189  2-198
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_subversion
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-76  2-79
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_success
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-228  2-286
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_sum
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-523  2-529
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_tag
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-89  2-115
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_tag_ub
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-90  2-117
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_thread_funneled
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-218  2-222
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_thread_multiple
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-219  2-224
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_thread_serialized
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-219  2-223
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_thread_single
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-218  2-221
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_type_dup_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-69
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_type_null_copy_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-68
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_type_null_delete_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-68
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_typeclass_complex
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-99  2-141
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_typeclass_integer
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-98  2-139
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_typeclass_real
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-98  2-140
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_ub
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-410  2-451
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_uint16_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-439  2-509
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_uint32_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-440  2-511
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_uint64_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-441  2-513
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_uint8_t
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-438  2-507
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_undefined
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-86  2-109
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unequal
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-347  2-352
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_universe_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-91  2-123
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unsigned
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-429  2-488
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unsigned_char
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-427  2-483
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unsigned_long
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-430  2-490
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unsigned_long_long
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-431  2-492
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unsigned_short
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-428  2-486
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_unweighted
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 2-166  2-193
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_version
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-76  2-78
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_wchar
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-426  2-481
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_base
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-103  2-124
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_disp_unit
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-103  2-126
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_dup_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-72
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_null
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-204  2-213
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_null_copy_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-70
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_null_delete_fn
+      |(Class and Type) : external procedure name
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-71
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_win_size
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-103  2-125
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_wtick
+      |(Class and Type) : external function name, REAL(8)
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-83  1-84
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_wtime
+      |(Class and Type) : external function name, REAL(8)
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-83  1-84
+      |(Definition)     : 
+      |(Reference)      : 
+     mpi_wtime_is_global
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 2-90  2-120
+      |(Definition)     : 
+      |(Reference)      : 
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 5  6  7  10  21
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 5  6  7  20
+     ompi_greek_version
+      |(Class and Type) : named constant, CHARACTER(32,1)
+      |(Attributes)     : 
+      |(Declaration)    : 3-73  3-78
+      |(Definition)     : 
+      |(Reference)      : 
+     ompi_major_version
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-71  3-75
+      |(Definition)     : 
+      |(Reference)      : 
+     ompi_minor_version
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-71  3-76
+      |(Definition)     : 
+      |(Reference)      : 
+     ompi_release_version
+      |(Class and Type) : named constant, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-72  3-77
+      |(Definition)     : 
+      |(Reference)      : 
+     ompi_svn_version
+      |(Class and Type) : named constant, CHARACTER(32,1)
+      |(Attributes)     : 
+      |(Declaration)    : 3-74  3-79
+      |(Definition)     : 
+      |(Reference)      : 
+     pmpi_wtick
+      |(Class and Type) : external function name, REAL(8)
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-83  1-84
+      |(Definition)     : 
+      |(Reference)      : 
+     pmpi_wtime
+      |(Class and Type) : external function name, REAL(8)
+      |(Attributes)     : EXTERNAL
+      |(Declaration)    : 1-83  1-84
+      |(Definition)     : 
+      |(Reference)      : 
+     rbuf
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 2  7
+      |(Definition)     : 23
+      |(Reference)      : 
+     rwork
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 6
+      |(Definition)     : 15
+      |(Reference)      : 23
+     sbuf
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 2  5
+      |(Definition)     : 15
+      |(Reference)      : 
+
+ Total information
+   Procedures       : 1
+   Total lines      : 848
+   Total statements : 464
+   Total stack(byte): 16
+   Total prefetch num: 0
+
+ Include file name list
+     1 : /opt/FJSVfxlang/1.2.1/include/mpi/fujitsu/mpif.h
+     2 : /opt/FJSVfxlang/1.2.1/include/mpi/fujitsu/mpif-common.h
+     3 : /opt/FJSVfxlang/1.2.1/include/mpi/fujitsu/mpif-config.h
+     4 : /opt/FJSVfxlang/1.2.1/include/mpi/fujitsu/mpif-mpi-io.h
+

@@ -1,0 +1,16 @@
+ &modlst
+ hmean=10000.,
+ taui= 0.0,
+ taue= 25.0,
+ tauo= 1.,
+ dt=240.0,
+ hfilt=0.01e16,
+ tfilt=0.05,
+ ktopo=0,
+ vmax=35.,
+ rvm=100.,
+ b=0.9,
+ tylat=24,
+ tylon=119.,
+ fplane=false,
+ &end 

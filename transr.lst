@@ -1,0 +1,1088 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:17 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : transr.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o transr.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "transr"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine transr (jtrun,jtmax,nx,my,my_max,lev,poly,wss
+               2                          &                  ,cc,num,nsize)
+               3                     c
+               4                     c  subroutine to transform a spectral coefficient field to
+               5                     c  grid point form
+               6                     c
+               7                     c *** input ***
+               8                     c
+               9                     c  jtrun: zonal wavenumber resolution limit
+              10                     c  jtmax: maximum amount of zonal waves located in each pe
+              11                     c  nx: e-w dimension no.
+              12                     c  my: n-s dimension no.
+              13                     c  my_max: maximum amount of n-s grids located in each pe
+              14                     c  lev: number of levels to transform
+              15                     c  poly: legendre polynomials
+              16                     c  wss: spectral coefficient array to transform
+              17                     c  num: number of variables grouped together
+              18                     c
+              19                     c *** output ***
+              20                     c
+              21                     c  cc: 3-d output grid point fields
+              22                     c
+              23                     c  **************************************
+              24                     c
+              25                           include '../include/index.h'
+     1         1                     c      common /mwork/mlistnum,mlist(500)
+     1         2                     c     &             ,nlist(500),ilist(500)
+     1         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     1         4                     c     &            , jlistnum_tmp(1280)
+     1         5                           common /mwork/mlistnum,mlist(1000)
+     1         6                          &             ,nlist(1000),ilist(1000)
+     1         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     1         8                          &            , jlistnum_tmp(2560)
+              26                           include '../include/paramt.h'
+     2         1                     c
+     2         2                     cxxx  include paramt.h
+     2         3                           parameter (im= 2160, jm= im/2, lm=1, jtr= 2*((1+(im-1)/3)/2)
+     2         4                     c      parameter (im= 1800, jm= im/2, lm=1, jtr= 2*((1+(im-1)/3)/2)
+     2         5                          *, mlm= jtr*(jtr+1)/2)
+     2         6                     c
+     2         7                           parameter (imax= 2160, jmax=imax/2, lpx=1, kvkw=im/2)
+     2         8                     c      parameter (imax= 1800, jmax=imax/2, lpx=1, kvkw=im/2)
+     2         9                     cfj
+     2        10                           parameter (ilm=im*lm, im2=kvkw*(lm+1))
+     2        11                     cfj
+     2        12                     c
+     2        13                           parameter ( jmhalf=jm/2, lmX2=lm*2, lmX4=lm*4, lmX10=lm*10 )
+     2        14                     c
+     2        15                     c  this include file is used in subroutines with internal scratch work
+     2        16                     c  arrays.  the above parameters are used to dimension these arrays.
+     2        17                     c  on machines with a dynamic array fortran extension, e.g., CRAY and
+     2        18                     c  HP, the dimensions can be passed though the subroutine argument list
+     2        19                     c  and this include file is unnecessary, making these subroutine truly
+     2        20                     c  plug-compatible.  the following parameters in include file 'param.h'
+     2        21                     c  must be the same as the above.
+     2        22                     c
+     2        23                     c  im= nx
+     2        24                     c  jm= my
+     2        25                     c  lm= lev
+     2        26                     c  jtr= jtrun
+     2        27                     c  mlm= mlmax
+     2        28                     c  lpx= lpout
+     2        29                     c  kvkw=lvlw
+     2        30                     c
+     2        31                     c   imax and jmax are the dimensions of the 2.5 deg input fields
+     2        32                     c
+     2        33                     c *********************************************************************
+     2        34                     cxxx
+              27                           include '../include/fftcom.h'
+     3         1                     c
+     3         2                     cxxx  include fftcom.h
+     3         3                     c
+     3         4                     ccc   common/fft/ trigs(512),ifax(19)
+     3         5                     ct180 common/fft/ trigs(1024),ifax(19)
+     3         6                     ct240
+     3         7                     c      common/fft/ trigs(2048),ifax(19)
+     3         8                           common/fft/ trigs(4096),ifax(19)
+     3         9                     c
+     3        10                     c  ibm_fft : an option for choosing ibm essl fft routine (ibm_fft=1)
+     3        11                     c  "nx" can not be one of the following conditions:
+     3        12                     c     (1)radix of 3**i, i>2
+     3        13                     c     (2)radix of 5**i, i>1
+     3        14                     c     (3)radix of 7**i, i>1
+     3        15                     c     (4)radix of 11**i, i>1
+     3        16                     c     (5)radix of 13, 17, 19, 23, 29
+     3        17                     c
+     3        18                     ccc   parameter( ibm_fft = 0 )
+     3        19                     c
+     3        20                     c  working arrays for ibm_fft
+     3        21                     c
+     3        22                     ccc   parameter( nwork=22000 )
+     3        23                     c     dimension swkd1(nwork),twkd1(nwork)
+     3        24                     c     dimension swkd2(nwork),twkd2(nwork)
+     3        25                           logical lessl_fft
+     3        26                     c     common /ibm_fft/lessl_fft,incx,incy,isign,scale
+     3        27                     ccc  &               ,swkd1,twkd1,swkd2,twkd2
+     3        28                     
+     3        29                     c
+     3        30                     c  the parameter below is valid only for original rfftmlt used
+     3        31                     c
+     3        32                     c  length_fft : an option for doing fft with long or short vector
+     3        33                     c  length_fft = 0 : use long vector, which favors vector machines like
+     3        34                     c                   vpp5000
+     3        35                     c               1 : use short vector, which has better performance
+     3        36                     c                   on scalar machines
+     3        37                     c
+     3        38                           parameter ( length_fft = 1 )
+     3        39                     cxxx
+              28                     c
+              29                           dimension poly(jtrun,my/2,jtmax)
+              30                           dimension cc(nx+3,lev,num,my_max),wss(lev,2,num,jtrun,jtmax)
+              31                     c
+              32                     csun  include '../include/paramt.h' .. change im,jm to nx,my
+              33                           dimension gwk1(nx+3,lev,num,my_max)
+              34                     c
+              35                           dimension wcc_fk (lev,2,num,jtmax,my_max*nsize)
+              36                           dimension twcc_fk(lev,2,num,jtmax*nsize,my_max)
+              37                           dimension tcc(lev,2,num,my/2),tc2(lev,2,num,my/2)
+              38                           dimension ws2(lev,2,num,jtrun)
+              39                     c
+              40                           mlx= (jtrun/2)*((jtrun+1)/2)
+              41                           myhalf=my/2
+              42                           lev2=lev*2
+              43                     c
+              44                     c-- do start
+              45                     c
+              46     1                     do m=1,mlistnum
+              47     1                       mf=mlist(m)
+              48     1                       lmax=jtrun-mf+1
+              49     1                       lchk=iand(lmax,1)
+              50     1               
+              51     2                     do l=mf,jtrun-1,2
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              52     3       8v            do k=1,lev2*num
+              53     3       8v            ws2(k,1,1,l) = wss(k,1,1,l,m)
+              54     3       8v            ws2(k,1,1,l+1) = -wss(k,1,1,l+1,m)
+              55     3       8v            enddo
+              56     2                     enddo
+              57     2                     if (lchk.eq.1) then
+              58     2                       l=jtrun
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              59     3       8v              do k=1,lev2*num
+              60     3       8v                ws2(k,1,1,l) = -wss(k,1,1,l,m)
+              61     3       8v              enddo
+              62     2                     endif
+              63     1               c............................  replaced by two dgemm (BLAS3 routine)
+              64     1               c     do k=1,lev2*num*myhalf
+              65     1               c      tcc(k,1,1,1)=0.
+              66     1               c      tc2(k,1,1,1)=0.
+              67     1               c     enddo
+              68     1               c
+              69     1               c     do j=1,myhalf
+              70     1               c       do l=mf,jtrun
+              71     1               c       do k=1,lev2*num
+              72     1               c         tcc(k,1,1,j)=tcc(k,1,1,j)+poly(l,j,m)*wss(k,1,1,l,m)
+              73     1               c         tc2(k,1,1,j)=tc2(k,1,1,j)+poly(l,j,m)*ws2(k,1,1,l)
+              74     1               c       enddo
+              75     1               c       enddo
+              76     1               c     enddo
+              77     1               cfong--beg
+              78     1               c     call dgemm('N','N',lev2*num,myhalf,lmax,
+              79     1               c    &             1.0, wss(1,1,1,mf,m),lev2*num,
+              80     1               c    &                 poly(mf,1,m),jtrun,
+              81     1               c    &             0.0,tcc,lev2*num)
+              82     1               c     call dgemm('N','N',lev2*num,myhalf,lmax,
+              83     1               c    &             1.0, ws2(1,1,1,mf),  lev2*num,
+              84     1               c    &                 poly(mf,1,m),jtrun,
+              85     1               c    &             0.0, tc2,lev2*num)
+              86     1               cfong--end
+              87     1               cfong-- cache blocking method
+              88     1               c
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              89     2       8v              do k=1,lev2*num*myhalf
+              90     2       8v               tcc(k,1,1,1)=0.
+              91     2       8v               tc2(k,1,1,1)=0.
+              92     2       8v              enddo
+              93     1               c
+              94     1               c  nb : multiple of 2
+              95     1               c
+              96     1                       nb=32
+              97     1                       jchk= iand(myhalf, 1)
+              98     1                       jje = myhalf-jchk
+              99     1               c
+             100     2                       do jj=1,jje,nb
+             101     3                       do kk=1,lev2*num,nb
+             102     4                       do ll=mf,jtrun,nb
+             103     4               
+             104     5                       do j = jj,min(jj+nb-1,jje), 2
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    PREFETCH       : 4
+                                   <<<      ws2: 2, wss: 2
+                                   <<< Loop-information  End >>>
+             105     6                         do k = kk,min(kk+nb-1,lev2*num),2
+             106     6                           sa00=tcc(k  ,1,1,j)
+             107     6                           sa01=tcc(k  ,1,1,j+1)
+             108     6                           sa10=tcc(k+1,1,1,j)
+             109     6                           sa11=tcc(k+1,1,1,j+1)
+             110     6                           sb00=tc2(k  ,1,1,j)
+             111     6                           sb01=tc2(k  ,1,1,j+1)
+             112     6                           sb10=tc2(k+1,1,1,j)
+             113     6                           sb11=tc2(k+1,1,1,j+1)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             114     7       4v                  do l = ll,min(ll+nb-1,jtrun)
+             115     7       4v                    sa00=sa00+poly(l,j,  m)*wss(k,1,1,l,m)
+             116     7       4v                    sa01=sa01+poly(l,j+1,m)*wss(k,1,1,l,m)
+             117     7       4v                    sa10=sa10+poly(l,j,  m)*wss(k+1,1,1,l,m)
+             118     7       4v                    sa11=sa11+poly(l,j+1,m)*wss(k+1,1,1,l,m)
+             119     7       4v                    sb00=sb00+poly(l,j,  m)*ws2(k,1,1,l)
+             120     7       4v                    sb01=sb01+poly(l,j+1,m)*ws2(k,1,1,l)
+             121     7       4v                    sb10=sb10+poly(l,j,  m)*ws2(k+1,1,1,l)
+             122     7       4v                    sb11=sb11+poly(l,j+1,m)*ws2(k+1,1,1,l)
+             123     7       4v                  enddo
+             124     6                           tcc(k,1,1,j  )=sa00
+             125     6                           tcc(k,1,1,j+1)=sa01
+             126     6                           tcc(k+1,1,1,j  )=sa10
+             127     6                           tcc(k+1,1,1,j+1)=sa11
+             128     6                           tc2(k,1,1,j)=sb00
+             129     6                           tc2(k,1,1,j+1)=sb01
+             130     6                           tc2(k+1,1,1,j)=sb10
+             131     6                           tc2(k+1,1,1,j+1)=sb11
+             132     6                         enddo
+             133     5                       enddo
+             134     4               
+             135     4                       enddo
+             136     3                       enddo
+             137     2                       enddo
+             138     1               c
+             139     1               c odd number
+             140     1               c
+             141     2                       if( jchk.eq.1 )then
+             142     2                         j = myhalf
+             143     3                       do kk=1,lev2*num,nb
+             144     4                       do ll=mf,jtrun,nb
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    PREFETCH       : 4
+                                   <<<      ws2: 2, wss: 2
+                                   <<< Loop-information  End >>>
+             145     5                         do k = kk,min(kk+nb-1,lev2*num),2
+             146     5                           sa00=tcc(k,1,1,j)
+             147     5                           sa10=tcc(k+1,1,1,j)
+             148     5                           sb00=tc2(k,1,1,j)
+             149     5                           sb10=tc2(k+1,1,1,j)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             150     6       4v                  do l = ll,min(ll+nb-1,jtrun)
+             151     6       4v                    sa00=sa00+poly(l,j,  m)*wss(k,1,1,l,m)
+             152     6       4v                    sa10=sa10+poly(l,j,  m)*wss(k+1,1,1,l,m)
+             153     6       4v                    sb00=sb00+poly(l,j,  m)*ws2(k,1,1,l)
+             154     6       4v                    sb10=sb10+poly(l,j,  m)*ws2(k+1,1,1,l)
+             155     6       4v                  enddo
+             156     5                           tcc(k,1,1,j  )=sa00
+             157     5                           tcc(k+1,1,1,j  )=sa10
+             158     5                           tc2(k,1,1,j)=sb00
+             159     5                           tc2(k+1,1,1,j)=sb10
+             160     5                         enddo
+             161     4                       enddo
+             162     3                       enddo
+             163     2                       endif
+             164     1               
+             165     1               cfong--end
+             166     1               
+             167     1               
+             168     2                     do j=1, myhalf
+             169     2                     jj=jlist2(j)
+             170     2                     jx=my-j+1
+             171     2                     j2=jlist2(jx)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             172     3       8v            do k=1,lev2*num
+             173     3       8v             wcc_fk(k,1,1,m,jj)=tcc(k,1,1,j)
+             174     3       8v             wcc_fk(k,1,1,m,j2)=tc2(k,1,1,j)
+             175     3       8v            enddo
+             176     2                     enddo
+             177     1               
+             178     1                     enddo
+             179                     c--do end
+             180                     
+             181                           call mpe_transpose_sr(wcc_fk,twcc_fk,lev*2*num,jtmax,my_max,nsize)
+             182                     
+             183     1                     do jj =1,jlistnum
+             184     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+             185     2        v            do ii=1,num
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<< Loop-information  End >>>
+             186     3        v            do k=1,lev
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<< Loop-information  End >>>
+             187     4        v            do i=1,nx+3
+             188     4        v             cc(i,k,ii,jj)=0.
+             189     4        v            enddo
+             190     3        v            enddo
+             191     2        v            enddo
+             192     1               
+             193     1               cfong--
+             194     1                     mchk=iand(jtrun,3)
+             195     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 4)
+                                   <<<    SPLIT
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             196     2       2s            do m=1,mchk
+             197     2       2s               mm= 2*m-1
+             198     2       2s               mp= mm+1
+             199     2       2s               mlst=nlist(m)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 2)
+                                   <<< Loop-information  End >>>
+             200     3       2             do ii=1,num
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 3)
+                                   <<< Loop-information  End >>>
+             201     4       2             do k=1,lev
+             202     4       2s               cc(mm,k,ii,jj)=twcc_fk(k,1,ii,mlst,jj)
+             203     4       2s               cc(mp,k,ii,jj)=twcc_fk(k,2,ii,mlst,jj)
+             204     4       2             enddo
+             205     3       2             enddo
+             206     2       2s            enddo
+             207     1               
+             208     2                     do m=mchk+1,jtrun,4
+             209     2                        mm= 2*m-1
+             210     2                        mp= mm+1
+             211     2                        mlst=nlist(m)
+             212     2                        mm1= 2*(m+1)-1
+             213     2                        mp1= mm1+1
+             214     2                        mlst1=nlist(m+1)
+             215     2                        mm2= 2*(m+2)-1
+             216     2                        mp2= mm2+1
+             217     2                        mlst2=nlist(m+2)
+             218     2                        mm3= 2*(m+3)-1
+             219     2                        mp3= mm3+1
+             220     2                        mlst3=nlist(m+3)
+             221     3                     do ii=1,num
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             222     4       2v            do k=1,lev
+             223     4       2v               cc(mm,k,ii,jj)=twcc_fk(k,1,ii,mlst,jj)
+             224     4       2v               cc(mp,k,ii,jj)=twcc_fk(k,2,ii,mlst,jj)
+             225     4       2v               cc(mm1,k,ii,jj)=twcc_fk(k,1,ii,mlst1,jj)
+             226     4       2v               cc(mp1,k,ii,jj)=twcc_fk(k,2,ii,mlst1,jj)
+             227     4       2v               cc(mm2,k,ii,jj)=twcc_fk(k,1,ii,mlst2,jj)
+             228     4       2v               cc(mp2,k,ii,jj)=twcc_fk(k,2,ii,mlst2,jj)
+             229     4       2v               cc(mm3,k,ii,jj)=twcc_fk(k,1,ii,mlst3,jj)
+             230     4       2v               cc(mp3,k,ii,jj)=twcc_fk(k,2,ii,mlst3,jj)
+             231     4       2v            enddo
+             232     3                     enddo
+             233     2                     enddo
+             234     1               
+             235     1                     enddo
+             236                     
+             237                     c
+             238                     cfong
+             239     1                     if( length_fft .eq. 0 )then
+             240     1                     call rfftmlt(cc,gwk1,trigs,ifax,1,nx+3,nx,lev*jlistnum*num,1)
+             241     1                     else
+             242     2       8s            do jj = 1, jlistnum
+             243     2       8s             call rfftmlt(cc(1,1,1,jj),gwk1,trigs,ifax,1,nx+3,nx,lev*num,1)
+             244     2       8s            end do
+             245     1                     end if
+             246                     cfong
+             247                     c
+             248                        20 continue
+             249                     
+             250                           return
+             251                           end
+
+ Diagnostic messages: program name(transr)
+   jwd2003i-i  "../include/fftcom.h", line 25: 'lessl_fft' is declared in INCLUDE but never referenced.
+   jwd8220o-i  "transr.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "transr.f", line 52: SIMD conversion is applied to DO loop with DO variable 'k'.
+   jwd8204o-i  "transr.f", line 52: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 52: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "transr.f", line 53: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "transr.f", line 59: SIMD conversion is applied to DO loop with DO variable 'k'.
+   jwd8204o-i  "transr.f", line 59: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 59: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "transr.f", line 60: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "transr.f", line 89: SIMD conversion is applied to DO loop with DO variable 'k'.
+   jwd8663o-i  "transr.f", line 89: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "transr.f", line 89: Loop unrolled 8 times.
+   jwd6004s-i  "transr.f", line 114: SIMD conversion is applied to DO loop with DO variable 'l'. The DO loop contains a reduction operation.
+   jwd8204o-i  "transr.f", line 114: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 114: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 40.
+   jwd8209o-i  "transr.f", line 115: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8208o-i  "transr.f", line 115: Method of calculating sum or product is changed.
+   jwd8208o-i  "transr.f", line 118: Method of calculating sum or product is changed.
+   jwd8208o-i  "transr.f", line 120: Method of calculating sum or product is changed.
+   jwd6004s-i  "transr.f", line 150: SIMD conversion is applied to DO loop with DO variable 'l'. The DO loop contains a reduction operation.
+   jwd8204o-i  "transr.f", line 150: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 150: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 32.
+   jwd8209o-i  "transr.f", line 151: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8208o-i  "transr.f", line 152: Method of calculating sum or product is changed.
+   jwd8208o-i  "transr.f", line 153: Method of calculating sum or product is changed.
+   jwd6001s-i  "transr.f", line 172: SIMD conversion is applied to DO loop with DO variable 'k'.
+   jwd8204o-i  "transr.f", line 172: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 172: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "transr.f", line 173: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6002s-i  "transr.f", line 185: SIMD conversion is applied to DO loop.
+   jwd8663o-i  "transr.f", line 185: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8209o-i  "transr.f", line 188: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8330o-i  "transr.f", line 188: Nested DO loops were coalesced into a single loop by DO variables ii,...,i.
+   jwd8211o-i  "transr.f", line 196: Loops interchanged at line 201.
+   jwd8212o-i  "transr.f", line 196: Loop distributed into multiple loops.
+   jwd6145s-i  "transr.f", line 196: SIMD conversion cannot be applied to DO loop: the definition and the reference to data are non-continuous accesses.
+   jwd6123s-i  "transr.f", line 196: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8204o-i  "transr.f", line 196: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 196: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 12.
+   jwd8205o-i  "transr.f", line 196: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 8.
+   jwd8211o-i  "transr.f", line 200: Loops interchanged at line 196.
+   jwd8211o-i  "transr.f", line 201: Loops interchanged at line 200.
+   jwd8209o-i  "transr.f", line 202: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "transr.f", line 222: SIMD conversion is applied to DO loop with DO variable 'k'.
+   jwd8204o-i  "transr.f", line 222: This loop is software pipelined.
+   jwd8205o-i  "transr.f", line 222: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 16.
+   jwd8209o-i  "transr.f", line 223: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6123s-i  "transr.f", line 242: SIMD conversion cannot be applied to DO loop: a data with restricted type was found in the DO loop.
+   jwd8664o-i  "transr.f", line 242: This loop is not software pipelined because the loop contains an instruction not covered by software pipelining, such as function call.
+   jwd8202o-i  "transr.f", line 242: Loop unrolled 8 times.
+   jwd6208s-i  "transr.f", line 243: SIMD conversion cannot be applied to DO loop: the order of data references of definition 'nx' may be different from the order of data references in serial execution.
+   jwd6122s-i  "transr.f", line 243: SIMD conversion cannot be applied to DO loop: a procedure reference was found in the loop.
+
+ Procedure information
+   Lines      : 332
+   Statements : 170
+   Stack(byte): 48
+   Prefetch num: 8
+
+ Scoping unit of external sub-program : transr
+   Attribute and Cross reference of name
+     cc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  30
+      |(Definition)     : 188  202  203  223  224  225  226  227  228  229  230  240  243
+      |(Reference)      : 
+     fft
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-8
+      |(Definition)     : 
+      |(Reference)      : 
+     gwk1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 33
+      |(Definition)     : 240  243
+      |(Reference)      : 
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 187
+      |(Reference)      : 188
+     iand
+      |(Class and Type) : intrinsic function name, INTEGER(4)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 49  97  194
+     ifax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-8
+      |(Definition)     : 240  243
+      |(Reference)      : 
+     ii
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 185  200  221
+      |(Reference)      : 188  202  202  203  203  223  223  224  224  225  225  226  226  227  227  228  228  229  229  230  230
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     ilm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-10
+      |(Definition)     : 
+      |(Reference)      : 
+     im
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-3  2-3  2-7  2-10
+     im2
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-10
+      |(Definition)     : 
+      |(Reference)      : 
+     imax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 2-7
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 104  142  168
+      |(Reference)      : 106  107  108  109  110  111  112  113  115  116  117  118  119  120  121  122  124  125  126  127  128  129  130  131  146  147  148  149  151  152  153  154  156  157  158  159  169  170  173  174
+     j2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 171
+      |(Reference)      : 174
+     jchk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 97
+      |(Reference)      : 98  141
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 100  169  183  242
+      |(Reference)      : 104  104  173  188  202  202  203  203  223  223  224  224  225  225  226  226  227  227  228  228  229  229  230  230  243
+     jje
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 98
+      |(Reference)      : 100  104
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 169  171
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 183  240  242
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-13
+     jmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jmhalf
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 181
+      |(Reference)      : 29  30  35  36
+     jtr
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-3  2-3
+     jtrun
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 29  30  38  40  40  48  51  58  102  114  144  150  194  208
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 170
+      |(Reference)      : 171
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 52  59  89  105  145  172  186  201  222
+      |(Reference)      : 53  53  54  54  60  60  90  91  106  107  108  109  110  111  112  113  115  116  117  118  119  120  121  122  124  125  126  127  128  129  130  131  146  147  148  149  151  152  153  154  156  157  158  159  173  173  174  174  188  202  202  203  203  223  223  224  224  225  225  226  226  227  227  228  228  229  229  230  230
+     kk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 101  143
+      |(Reference)      : 105  105  145  145
+     kvkw
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 2-10
+     l
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 51  58  114  150
+      |(Reference)      : 53  53  54  54  60  60  115  115  116  116  117  117  118  118  119  119  120  120  121  121  122  122  151  151  152  152  153  153  154  154
+     lchk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 49
+      |(Reference)      : 57
+     length_fft
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 3-38
+      |(Definition)     : 
+      |(Reference)      : 239
+     lessl_fft
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-25
+      |(Definition)     : 
+      |(Reference)      : 
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 30  30  33  35  36  37  37  38  42  181  186  201  222  240  243
+     lev2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 42
+      |(Reference)      : 52  59  101  105  143  145  172
+     ll
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 102  144
+      |(Reference)      : 114  114  150  150
+     lm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-10  2-10  2-13  2-13  2-13
+     lmX10
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lmX2
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lmX4
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lmax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 48
+      |(Reference)      : 49
+     lpx
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 46  196  208
+      |(Reference)      : 47  53  54  60  115  115  116  116  117  117  118  118  119  120  121  122  151  151  152  152  153  154  173  174  197  199  209  211  212  214  215  217  218  220
+     mchk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 194
+      |(Reference)      : 196  208
+     mf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 47
+      |(Reference)      : 48  51  102  144
+     min
+      |(Class and Type) : intrinsic function name, INTEGER(4)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 104  105  114  145  150
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 47
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 46
+     mlm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 
+     mlst
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 199  211
+      |(Reference)      : 202  203  223  224
+     mlst1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 214
+      |(Reference)      : 225  226
+     mlst2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 217
+      |(Reference)      : 227  228
+     mlst3
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 220
+      |(Reference)      : 229  230
+     mlx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 40
+      |(Reference)      : 
+     mm
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 197  209
+      |(Reference)      : 198  202  210  223
+     mm1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 212
+      |(Reference)      : 213  225
+     mm2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 215
+      |(Reference)      : 216  227
+     mm3
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 218
+      |(Reference)      : 219  229
+     mp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 198  210
+      |(Reference)      : 203  224
+     mp1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 213
+      |(Reference)      : 226
+     mp2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 216
+      |(Reference)      : 228
+     mp3
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 219
+      |(Reference)      : 230
+     mpe_transpose_sr
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 181
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 29  37  37  41  170
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 181
+      |(Reference)      : 30  33  35  36
+     myhalf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 41
+      |(Reference)      : 89  97  98  142  168
+     nb
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 96
+      |(Reference)      : 100  101  102  104  105  114  143  144  145  150
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 199  211  214  217  220
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 181
+      |(Reference)      : 35  36
+     num
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 30  30  33  35  36  37  37  38  52  59  101  105  143  145  172  181  185  200  221  240  243
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 240  243
+      |(Reference)      : 30  33  187  240  243
+     poly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  29
+      |(Definition)     : 
+      |(Reference)      : 115  116  117  118  119  120  121  122  151  152  153  154
+     rfftmlt
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 240  243
+     sa00
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 106  115  146  151
+      |(Reference)      : 115  124  151  156
+     sa01
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 107  116
+      |(Reference)      : 116  125
+     sa10
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 108  117  147  152
+      |(Reference)      : 117  126  152  157
+     sa11
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 109  118
+      |(Reference)      : 118  127
+     sb00
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 110  119  148  153
+      |(Reference)      : 119  128  153  158
+     sb01
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 111  120
+      |(Reference)      : 120  129
+     sb10
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 112  121  149  154
+      |(Reference)      : 121  130  154  159
+     sb11
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 113  122
+      |(Reference)      : 122  131
+     tc2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 37
+      |(Definition)     : 91  128  129  130  131  158  159
+      |(Reference)      : 110  111  112  113  148  149  174
+     tcc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 37
+      |(Definition)     : 90  124  125  126  127  156  157
+      |(Reference)      : 106  107  108  109  146  147  173
+     transr
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     trigs
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-8
+      |(Definition)     : 240  243
+      |(Reference)      : 
+     twcc_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 36
+      |(Definition)     : 181
+      |(Reference)      : 202  203  223  224  225  226  227  228  229  230
+     wcc_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 35
+      |(Definition)     : 173  174  181
+      |(Reference)      : 
+     ws2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 38
+      |(Definition)     : 53  54  60
+      |(Reference)      : 119  120  121  122  153  154
+     wss
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  30
+      |(Definition)     : 
+      |(Reference)      : 53  54  60  115  116  117  118  151  152
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         20  execution     (Definition) 248
+
+ Total information
+   Procedures       : 1
+   Total lines      : 332
+   Total statements : 170
+   Total stack(byte): 48
+   Total prefetch num: 8
+
+ Include file name list
+     1 : ../include/index.h
+     2 : ../include/paramt.h
+     3 : ../include/fftcom.h
+

@@ -1,0 +1,558 @@
+
+ Fujitsu Fortran Version 1.2.1  Fri Aug 16 14:28:00 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : bogusuv.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o bogusuv.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "bogusuv"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine bogusuv(nx,my,lev,my_max,rad,ut,vt,rvor,rdiv,cosl
+               2                          &,                  tylat,tylon,vmax,rvm,b,ix,jy,xlon,xlat)
+               3                     c
+               4                           include '../include/mpe.h'
+     1         1                     c
+     1         2                     c  include mpe.h
+     1         3                     c
+     1         4                           parameter(mpe_integer=0)
+     1         5                           parameter(mpe_double=1)
+     1         6                           parameter(mpe_logical=2)
+     1         7                     c
+               5                           include '../include/rank.h'
+     2         1                           common/mpe_comm/nsize, myrank
+               6                           include '../include/index.h'
+     3         1                     c      common /mwork/mlistnum,mlist(500)
+     3         2                     c     &             ,nlist(500),ilist(500)
+     3         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     3         4                     c     &            , jlistnum_tmp(1280)
+     3         5                           common /mwork/mlistnum,mlist(1000)
+     3         6                          &             ,nlist(1000),ilist(1000)
+     3         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     3         8                          &            , jlistnum_tmp(2560)
+               7                     c
+               8                           dimension ut(nx,lev,my_max),vt(nx,lev,my_max),rvor(nx,lev,my_max)
+               9                          *,  rdiv(nx,lev,my_max),cosl(my),ix(3),jy(3),xlon(nx+1,my),xlat(my)
+              10                     
+              11                           real xdim , ydim ,distance , vofr, xx ,xdis ,ydis
+              12                           real dislat(3),dislon(3)
+              13                           integer ty
+              14                     
+              15                     c
+              16                           radx=rad/1000.
+              17                           pi=4.0*atan(1.0)
+              18                           d2r=pi/180.
+              19                           r2d=1./d2r
+              20                     
+              21                     
+              22                      200 continue
+              23                     c
+              24                           ix(1)=tylon/(360./nx)+1
+              25                           jy(1)=(tylat-xlat(1))/(180./my)+1
+              26                           ix(2)=ix(1)+25
+              27                           jy(2)=jy(1)+25
+              28                           ix(3)=ix(1)
+              29                           jy(3)=jy(1)
+              30                           if(myrank.eq.0)print *,'vmax=',vmax,' rvm=',rvm,' b=',b
+              31                           if(myrank.eq.0)print *,'tylon=',tylon,' tylat=',tylat
+              32                           if(myrank.eq.0)print *,' ix=',ix(1),' jy=',jy(1)
+              33                     
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              34             8v            ut=0.
+              35             8v            vt=0.
+              36             8v            rvor=0.
+              37                     c
+              38     1                     do 101 ty =1,2
+              39     2                        if(ty.eq.1) then
+              40     2                            vmax = 50.
+              41     2                               b  = 1.1673007300730074
+              42     2                             rvm = 100.
+              43     2                        elseif(ty.eq.2) then
+              44     2                             vmax = 20.
+              45     2                                b = 0.31907790779077905
+              46     2                              rvm = 100.
+              47     2                        endif
+              48     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    UNSWITCHING
+                                   <<< Loop-information  End >>>
+              49     2                     do 100 jj=1,jlistnum
+              50     2                       j=jlist1(jj)
+              51     2                       xx = cosl(j)/rad
+              52     2                       ydis =  radx* (xlat(j)-((jy(ty)-1.)*(180./my)+xlat(1)))*d2r
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              53     3        m            do 100 i=1,nx
+              54     3        v              xdis =  radx*cosl(j)*(xlon(i,j)-((ix(ty)-1)*360./nx))* d2r
+              55     3        v              distance =( xdis**2 + ydis**2 )**(0.5)
+              56     4        s              if (ty.eq.1) then
+              57     5        s                  if     ( distance .lt. 300.) then
+              58     5        s                    vofr = 35*(distance/rvm)*exp((1-(distance/rvm)**0.9)/0.9)
+              59     5        s                  elseif (distance .ge. 300.)  then
+              60     5        s                     vofr = vmax*(distance/rvm)*exp((1-(distance/rvm)**b)/b)
+              61     5        s                  endif
+              62     4        s              elseif (ty.eq.2) then
+              63     5        s                  if     ( distance .lt. 300.) then
+              64     5        s                    vofr = 35*(distance/rvm)*exp((1-(distance/rvm)**0.9)/0.9)
+              65     5        s                  elseif (distance .ge. 300.)  then
+              66     5        s                     vofr = vmax*(distance/rvm)*exp((1-(distance/rvm)**b)/b)
+              67     5                           endif
+              68     4        v               endif
+              69     3               
+              70     3        v              rdiv(i,1,jj) = 0.
+              71     3        m              ut(i,1,jj) = vofr *(ydis/distance)*xx *(-1)  +ut(i,1,jj)
+              72     3        m              vt(i,1,jj) = vofr *(xdis/distance)*xx        +vt(i,1,jj)
+              73     3        v              rvor(i,1,jj)=2.*(vmax/(rvm*1000.))*(1.-0.5*(distance/rvm)**(b))
+              74     3                    &               * exp((1-(distance/rvm)**b) /b )+rvor(i,1,jj)
+              75     2        v       100  continue
+              76     1                101  continue
+              77                     
+              78                     c
+              79                           return
+              80                           end
+
+ Diagnostic messages: program name(bogusuv)
+   jwd8220o-i  "bogusuv.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd2006i-i  "bogusuv.f", line 11: 'ydim' is declared but never referenced.
+   jwd2006i-i  "bogusuv.f", line 11: 'xdim' is declared but never referenced.
+   jwd2006i-i  "bogusuv.f", line 12: 'dislon' is declared but never referenced.
+   jwd2006i-i  "bogusuv.f", line 12: 'dislat' is declared but never referenced.
+   jwd8206o-i  "bogusuv.f", line 16: Division is changed to multiplication by reciprocal.
+   jwd8206o-i  "bogusuv.f", line 18: Division is changed to multiplication by reciprocal.
+   jwd8209o-i  "bogusuv.f", line 18: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd1011i-w  "bogusuv.f", line 19: Continuation line must contain only blank characters in columns 1 through 5.
+   jwd2005i-w  "bogusuv.f", line 19: 'd2rontinue' is used but never set.
+   jwd8209o-i  "bogusuv.f", line 24: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8206o-i  "bogusuv.f", line 24: Division is changed to multiplication by reciprocal.
+   jwd8209o-i  "bogusuv.f", line 25: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8206o-i  "bogusuv.f", line 25: Division is changed to multiplication by reciprocal.
+   jwd6003s-i  "bogusuv.f", line 34: SIMD conversion is applied to array description.
+   jwd8663o-i  "bogusuv.f", line 34: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "bogusuv.f", line 34: Loop unrolled 8 times.
+   jwd8321o-i  "bogusuv.f", line 49: Loop unswitched.
+   jwd8206o-i  "bogusuv.f", line 51: Division is changed to multiplication by reciprocal.
+   jwd8209o-i  "bogusuv.f", line 52: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "bogusuv.f", line 53: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6229s-i  "bogusuv.f", line 53: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "bogusuv.f", line 53: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8204o-i  "bogusuv.f", line 53: This loop is software pipelined.
+   jwd8205o-i  "bogusuv.f", line 53: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 47.
+   jwd8209o-i  "bogusuv.f", line 54: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8213o-i  "bogusuv.f", line 55: Exponentiation method is changed.
+   jwd8206o-i  "bogusuv.f", line 58: Division is changed to multiplication by reciprocal.
+   jwd6202s-i  "bogusuv.f", line 58: SIMD conversion cannot be applied to DO loop: data dependency of variable 'vofr' may cause different results from serial execution for loop.
+   jwd8206o-i  "bogusuv.f", line 64: Division is changed to multiplication by reciprocal.
+   jwd6202s-i  "bogusuv.f", line 64: SIMD conversion cannot be applied to DO loop: data dependency of variable 'vofr' may cause different results from serial execution for loop.
+   jwd8209o-i  "bogusuv.f", line 71: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "bogusuv.f", line 72: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "bogusuv.f", line 73: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8206o-i  "bogusuv.f", line 73: Division is changed to multiplication by reciprocal.
+
+ Procedure information
+   Lines      : 96
+   Statements : 65
+   Stack(byte): 112
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : bogusuv
+   Attribute and Cross reference of name
+     atan
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 17
+     b
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 41  45
+      |(Reference)      : 30  60  60  66  66  73  73  73
+     bogusuv
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     cosl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 
+      |(Reference)      : 51  54
+     d2r
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 18
+      |(Reference)      : 52  54
+     d2rontinue
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 19
+     dislat
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 12
+      |(Definition)     : 
+      |(Reference)      : 
+     dislon
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 12
+      |(Definition)     : 
+      |(Reference)      : 
+     distance
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 55
+      |(Reference)      : 57  58  58  59  60  60  63  64  64  65  66  66  71  72  73  73
+     exp
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 58  60  64  66  73
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 53
+      |(Reference)      : 54  70  71  71  72  72  73  73
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     ix
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 24  26  28
+      |(Reference)      : 26  28  32  54
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 50
+      |(Reference)      : 51  52  54  54
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 49
+      |(Reference)      : 50  70  71  71  72  72  73  73
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 50
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 49
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jy
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 25  27  29
+      |(Reference)      : 27  29  32  52
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 8  8  8  8
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_comm
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_double
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_integer
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_logical
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-6
+      |(Definition)     : 
+      |(Reference)      : 
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 8  8  8  25  52
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 8  8  8  8
+     myrank
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 30  31  32
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 8  8  8  8  8  24  53  54
+     pi
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 17
+      |(Reference)      : 18
+     r2d
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 19
+      |(Reference)      : 
+     rad
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 16  51
+     radx
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 16
+      |(Reference)      : 52  54
+     rdiv
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 70
+      |(Reference)      : 
+     rvm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 42  46
+      |(Reference)      : 30  58  58  60  60  64  64  66  66  73  73  73
+     rvor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 36  73
+      |(Reference)      : 73
+     ty
+      |(Class and Type) : variable name, INTEGER(4)
+      |(Attributes)     : 
+      |(Declaration)    : 13
+      |(Definition)     : 38
+      |(Reference)      : 39  43  52  54  56  62
+     tylat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 25  31
+     tylon
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 24  31
+     ut
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 34  71
+      |(Reference)      : 71
+     vmax
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 40  44
+      |(Reference)      : 30  60  66  73
+     vofr
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 58  60  64  66
+      |(Reference)      : 71  72
+     vt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 35  72
+      |(Reference)      : 72
+     xdim
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 
+     xdis
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 54
+      |(Reference)      : 55  72
+     xlat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 
+      |(Reference)      : 25  52  52
+     xlon
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 
+      |(Reference)      : 54
+     xx
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 51
+      |(Reference)      : 71  72
+     ydim
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 
+     ydis
+      |(Class and Type) : variable name, REAL(8)
+      |(Attributes)     : 
+      |(Declaration)    : 11
+      |(Definition)     : 52
+      |(Reference)      : 55  71
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+        100  execution     (Definition) 75  
+                           (Reference)  49  53
+        101  execution     (Definition) 76  
+                           (Reference)  38
+
+ Total information
+   Procedures       : 1
+   Total lines      : 96
+   Total statements : 65
+   Total stack(byte): 112
+   Total prefetch num: 0
+
+ Include file name list
+     1 : ../include/mpe.h
+     2 : ../include/rank.h
+     3 : ../include/index.h
+

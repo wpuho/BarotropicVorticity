@@ -1,0 +1,310 @@
+
+ Fujitsu Fortran Version 1.2.1  Fri Aug 16 16:19:08 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : tracking.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o tracking.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "tracking"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine tracking(nx,my,vor,ix,jy)
+               2                     c
+               3                           include '../include/mpe.h'
+     1         1                     c
+     1         2                     c  include mpe.h
+     1         3                     c
+     1         4                           parameter(mpe_integer=0)
+     1         5                           parameter(mpe_double=1)
+     1         6                           parameter(mpe_logical=2)
+     1         7                     c
+               4                           include '../include/rank.h'
+     2         1                           common/mpe_comm/nsize, myrank
+               5                           include '../include/index.h'
+     3         1                     c      common /mwork/mlistnum,mlist(500)
+     3         2                     c     &             ,nlist(500),ilist(500)
+     3         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     3         4                     c     &            , jlistnum_tmp(1280)
+     3         5                           common /mwork/mlistnum,mlist(1000)
+     3         6                          &             ,nlist(1000),ilist(1000)
+     3         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     3         8                          &            , jlistnum_tmp(2560)
+               6                     c
+               7                           dimension vor(nx,my)
+               8                           dimension ix(3),jy(3)
+               9                           data ixyrange/5/
+              10                     c
+              11     1                     do ty = 1,2
+              12     1                     ib=ix(ty)-ixyrange
+              13     1                     ie=ix(ty)+ixyrange
+              14     1                     jb=jy(ty)-ixyrange
+              15     1                     je=jy(ty)+ixyrange
+              16     1                     vormax=-99999.
+              17     2                     do 10 j=jb,je
+              18     3       6s            do 10 i=ib,ie
+              19     4       6s              if(vor(i,j).gt.vormax)then
+              20     4       6s                ix(ty)=i
+              21     4       6s                jy(ty)=j
+              22     4       6s                vormax=vor(i,j)
+              23     4       6s              endif
+              24     2       6s       10   continue
+              25     1                     enddo
+              26                           return
+              27                           end
+
+ Diagnostic messages: program name(tracking)
+   jwd8220o-i  "tracking.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6229s-i  "tracking.f", line 18: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "tracking.f", line 18: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8202o-i  "tracking.f", line 18: Loop unrolled 6 times.
+   jwd6202s-i  "tracking.f", line 19: SIMD conversion cannot be applied to DO loop: data dependency of variable 'vormax' may cause different results from serial execution for loop.
+   jwd8209o-i  "tracking.f", line 25: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+
+ Procedure information
+   Lines      : 43
+   Statements : 27
+   Stack(byte): 16
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : tracking
+   Attribute and Cross reference of name
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 18
+      |(Reference)      : 19  20  22
+     ib
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 12
+      |(Reference)      : 18
+     ie
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 13
+      |(Reference)      : 18
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     ix
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 20
+      |(Reference)      : 12  13
+     ixyrange
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : initialized
+      |(Declaration)    : 9
+      |(Definition)     : 
+      |(Reference)      : 12  13  14  15
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 17
+      |(Reference)      : 19  21  22
+     jb
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 14
+      |(Reference)      : 17
+     je
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 15
+      |(Reference)      : 17
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jy
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  8
+      |(Definition)     : 21
+      |(Reference)      : 14  15
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_comm
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_double
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_integer
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_logical
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-6
+      |(Definition)     : 
+      |(Reference)      : 
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 7
+     myrank
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-5
+      |(Definition)     : 
+      |(Reference)      : 
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 2-1
+      |(Definition)     : 
+      |(Reference)      : 
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 7
+     tracking
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     ty
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 11
+      |(Reference)      : 12  13  14  15  20  21
+     vor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  7
+      |(Definition)     : 
+      |(Reference)      : 19  22
+     vormax
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 16  22
+      |(Reference)      : 19
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         10  execution     (Definition) 24  
+                           (Reference)  17  18
+
+ Total information
+   Procedures       : 1
+   Total lines      : 43
+   Total statements : 27
+   Total stack(byte): 16
+   Total prefetch num: 0
+
+ Include file name list
+     1 : ../include/mpe.h
+     2 : ../include/rank.h
+     3 : ../include/index.h
+

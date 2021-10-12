@@ -1,0 +1,686 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:11 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : lgndr.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o lgndr.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "lgndr"
+  (inc)(line-no.)(nest)(optimize)
+               1                     cfj   subroutine lgndr (my2,jtrun,mlmax,mlsort,sinl,poly,dpoly)
+               2                           subroutine lgndr (my2,jtrun,jtmax,sinl,poly,dpoly)
+               3                     c
+               4                     c  generate legendre polynomials and their derivatives on the
+               5                     c  gaussian latitudes
+               6                     c
+               7                     c ***input***
+               8                     c
+               9                     c  my2: number of gaussian latitudes from south pole and equator
+              10                     c  jtrun: zonal wavenumber truncation limit
+              11                     c  jtmax: maximum amount of zonal wave located in each pe
+              12                     c  sinl: sin of gaussian latitudes
+              13                     c
+              14                     c  ***output***
+              15                     c
+              16                     c  poly: associated legendre coefficients
+              17                     c  dpoly: d(poly)/d(sinl)
+              18                     c
+              19                     c ******************************************************************
+              20                     c
+              21                     c ref= belousov, s. l., 1962= tables of normalized associated
+              22                     c        legendre polynomials. pergamon press, new york
+              23                     c
+              24                     c
+              25                           include '../include/index.h'
+     1         1                     c      common /mwork/mlistnum,mlist(500)
+     1         2                     c     &             ,nlist(500),ilist(500)
+     1         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     1         4                     c     &            , jlistnum_tmp(1280)
+     1         5                           common /mwork/mlistnum,mlist(1000)
+     1         6                          &             ,nlist(1000),ilist(1000)
+     1         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     1         8                          &            , jlistnum_tmp(2560)
+              26                     c
+              27                           dimension poly(jtrun,my2,jtmax),dpoly(jtrun,my2,jtmax),sinl(my2)
+              28                     cfj
+              29                           dimension pnm(jtrun+1,jtrun+1),dpnm(jtrun+1,jtrun+1)
+              30                     cfj
+              31                     c
+              32                     c sinl is sin(latitude) = cos(colatitude)
+              33                     c pnm(np,mp) is legendre polynomial p(n,m) with np=n+1, mp=m+1
+              34                     c pnm(mp,np+1) is x derivative of p(n,m) with np=n+1, mp=m+1
+              35                     c
+              36                           jtrunp= jtrun+1
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    COLLAPSED
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              37              v            pnm=0.0
+              38     1                     do 1001 j=1,my2
+              39     1                     xx= sinl(j)
+              40     1                     sn= sqrt(1.0-xx*xx)
+              41     1               	sn2i = 1.0/(1.0 - xx*xx)
+              42     1                     rt2= sqrt(2.0)
+              43     1               	c1 = rt2
+              44     1               c
+              45     1                     pnm(1,1) = 1.0/rt2
+              46     1                     theta=-atan(xx/sqrt(1.0-xx*xx))+2.0*atan(1.0)
+              47     1               c
+              48     2                     do 20 n=1,jtrun
+              49     2               	np = n + 1
+              50     2                     fn=n
+              51     2               	fn2 = fn + fn
+              52     2               	fn2s = fn2*fn2
+              53     2               c eq 22
+              54     2                     c1= c1*sqrt(1.0-1.0/fn2s)
+              55     2                     c3= c1/sqrt(fn*(fn+1.0))
+              56     2               	ang = fn*theta
+              57     2               	s1 = 0.0
+              58     2               	s2 = 0.0
+              59     2               	c4 = 1.0
+              60     2               	c5 = fn
+              61     2               	a = -1.0
+              62     2               	b = 0.0
+              63     2               c
+              64     3        s            do 27 kp=1,np,2
+              65     3        v      	k = kp - 1
+              66     3        m            s2= s2+c5*sin(ang)*c4
+              67     3        s            if (k.eq.n) c4 = 0.5*c4
+              68     3        m            s1= s1+c4*cos(ang)
+              69     3        s      	a = a + 2.0
+              70     3        s      	b = b + 1.0
+              71     3        v            fk=k
+              72     3        m      	ang = theta*(fn - fk - 2.0)
+              73     3        s      	c4 = (a*(fn - b + 1.0)/(b*(fn2 - a)))*c4
+              74     3        s      	c5 = c5 - 2.0
+              75     3        v         27 continue
+              76     2               c eq 19
+              77     2               	pnm(np,1) = s1*c1
+              78     2               c eq 21
+              79     2               	pnm(np,2) = s2*c3
+              80     2                  20 continue
+              81     1               c
+              82     2                     do 4 mp=3,jtrunp
+              83     2               	m = mp - 1
+              84     2                     fm= m
+              85     2               	fm1 = fm - 1.0
+              86     2               	fm2 = fm - 2.0
+              87     2               	fm3 = fm - 3.0
+              88     2                     c6= sqrt(1.0+1.0/(fm+fm))
+              89     2               c eq 23
+              90     2               	pnm(mp,mp) = c6*sn*pnm(m,m)
+              91     2                     if (mp - jtrunp) 3,4,4
+              92     2                   3 continue
+              93     2               	nps = mp + 1
+              94     2               c
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              95     3       2s            do 41 np=nps,jtrunp
+              96     3       2v      	n = np - 1
+              97     3       2v            fn= n
+              98     3       2v      	fn2 = fn + fn
+              99     3       2v      	c7 = (fn2 + 1.0)/(fn2 - 1.0)
+             100     3       2v      	c8 = (fm1 + fn)/((fm + fn)*(fm2 + fn))
+             101     3       2v            c= sqrt((fn2+1.0)*c8*(fm3+fn)/(fn2-3.0))
+             102     3       2v            d= -sqrt(c7*c8*(fn-fm1))
+             103     3       2v            e= sqrt(c7*(fn-fm)/(fn+fm))
+             104     3               c eq 17
+             105     3       2m      	pnm(np,mp) = c*pnm(np-2,mp-2)
+             106     3                    1            + xx*(d*pnm(np-1,mp-2) + e*pnm(np - 1,mp))
+             107     3       2v         41 continue
+             108     2                   4 continue
+             109     1               c
+             110     2                     do 50 mp=1,jtrun
+             111     2                     fm= mp-1.0
+             112     2               	fms = fm*fm
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             113     3       4v            do 50 np=mp,jtrun
+             114     3       4v            fnp= np
+             115     3       4v      	fnp2 = fnp + fnp
+             116     3       4v      	cf = (fnp*fnp - fms)*(fnp2 - 1.0)/(fnp2 + 1.0)
+             117     3       4v            cf= sqrt(cf)
+             118     3               c der
+             119     3       4v            dpnm(np,mp)   = -sn2i*(cf*pnm(np+1,mp) - fnp*xx*pnm(np,mp))
+             120     2       4v         50 continue
+             121     1               c
+             122     1               cfj
+             123     2                     do 71 m=1,mlistnum
+             124     2                     mf=mlist(m)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             125     3       8v            do 71 l=mf,jtrun
+             126     3               cibm--- poly & dpoly: 2nd & 3rd dimension is transposed
+             127     3               cibm     poly(l,m,j)= pnm(l,mf)
+             128     3               cibm     dpoly(l,m,j)=dpnm(l,mf)
+             129     3       8v            poly(l,j,m)= pnm(l,mf)
+             130     3       8v            dpoly(l,j,m)=dpnm(l,mf)
+             131     2       8v         71 continue
+             132     1                     mlst=ilist(1)
+             133     1               cibm     if(mlst .ne. 0) dpoly(1,mlst,j)= 0.0
+             134     1                     if(mlst .ne. 0) dpoly(1,j,mlst)= 0.0
+             135     1               cfj
+             136     1                1001 continue
+             137                     c
+             138                           return
+             139                           end
+
+ Diagnostic messages: program name(lgndr)
+   jwd8220o-i  "lgndr.f", line 2: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6003s-i  "lgndr.f", line 37: SIMD conversion is applied to array description.
+   jwd8663o-i  "lgndr.f", line 37: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8209o-i  "lgndr.f", line 46: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8220o-i  "lgndr.f", line 50: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8206o-i  "lgndr.f", line 55: Division is changed to multiplication by reciprocal.
+   jwd6229s-i  "lgndr.f", line 64: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "lgndr.f", line 64: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd6202s-i  "lgndr.f", line 69: SIMD conversion cannot be applied to DO loop: data dependency of variable 'a' may cause different results from serial execution for loop.
+   jwd6202s-i  "lgndr.f", line 70: SIMD conversion cannot be applied to DO loop: data dependency of variable 'b' may cause different results from serial execution for loop.
+   jwd8220o-i  "lgndr.f", line 71: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8209o-i  "lgndr.f", line 72: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "lgndr.f", line 73: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8220o-i  "lgndr.f", line 84: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8220o-i  "lgndr.f", line 95: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8204o-i  "lgndr.f", line 95: This loop is software pipelined.
+   jwd8205o-i  "lgndr.f", line 95: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 10.
+   jwd8220o-i  "lgndr.f", line 97: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8209o-i  "lgndr.f", line 103: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6202s-i  "lgndr.f", line 105: SIMD conversion cannot be applied to DO loop: data dependency of variable 'pnm' may cause different results from serial execution for loop.
+   jwd8209o-i  "lgndr.f", line 105: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8220o-i  "lgndr.f", line 111: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "lgndr.f", line 113: SIMD conversion is applied to DO loop with DO variable 'np'.
+   jwd8204o-i  "lgndr.f", line 113: This loop is software pipelined.
+   jwd8205o-i  "lgndr.f", line 113: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8220o-i  "lgndr.f", line 114: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8209o-i  "lgndr.f", line 116: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "lgndr.f", line 119: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "lgndr.f", line 125: SIMD conversion is applied to DO loop with DO variable 'l'.
+   jwd8204o-i  "lgndr.f", line 125: This loop is software pipelined.
+   jwd8205o-i  "lgndr.f", line 125: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+
+ Procedure information
+   Lines      : 147
+   Statements : 88
+   Stack(byte): 48
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : lgndr
+   Attribute and Cross reference of name
+     a
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 61  69
+      |(Reference)      : 69  73  73
+     ang
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 56  72
+      |(Reference)      : 66  68
+     atan
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 46  46
+     b
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 62  70
+      |(Reference)      : 70  73  73
+     c
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 101
+      |(Reference)      : 105
+     c1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 43  54
+      |(Reference)      : 54  55  77
+     c3
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 55
+      |(Reference)      : 79
+     c4
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 59  67  73
+      |(Reference)      : 66  67  68  73
+     c5
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 60  74
+      |(Reference)      : 66  74
+     c6
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 88
+      |(Reference)      : 90
+     c7
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 99
+      |(Reference)      : 102  103
+     c8
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 100
+      |(Reference)      : 101  102
+     cf
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 116  117
+      |(Reference)      : 117  119
+     cos
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 68
+     d
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 102
+      |(Reference)      : 105
+     dpnm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 29
+      |(Definition)     : 119
+      |(Reference)      : 130
+     dpoly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 2  27
+      |(Definition)     : 130  134
+      |(Reference)      : 
+     e
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 103
+      |(Reference)      : 105
+     fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 71
+      |(Reference)      : 72
+     fm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 84  111
+      |(Reference)      : 85  86  87  88  88  100  103  103  112  112
+     fm1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 85
+      |(Reference)      : 100  102
+     fm2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 86
+      |(Reference)      : 100
+     fm3
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 87
+      |(Reference)      : 101
+     fms
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 112
+      |(Reference)      : 116
+     fn
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 50  97
+      |(Reference)      : 51  51  55  55  56  60  72  73  98  98  100  100  100  101  102  103  103
+     fn2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 51  98
+      |(Reference)      : 52  52  73  99  99  101  101
+     fn2s
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 52
+      |(Reference)      : 54
+     fnp
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 114
+      |(Reference)      : 115  115  116  116  119
+     fnp2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 115
+      |(Reference)      : 116  116
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 132
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 38
+      |(Reference)      : 39  129  130  134
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 27  27
+     jtrun
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 27  27  29  29  29  29  36  48  110  113  125
+     jtrunp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 36
+      |(Reference)      : 82  91  95
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 65
+      |(Reference)      : 67  71
+     kp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 64
+      |(Reference)      : 65
+     l
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 125
+      |(Reference)      : 129  129  130  130
+     lgndr
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 2
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 83  123
+      |(Reference)      : 84  90  90  124  129  130
+     mf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 124
+      |(Reference)      : 125  129  130
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 124
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 123
+     mlst
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 132
+      |(Reference)      : 134  134
+     mp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 82  110
+      |(Reference)      : 83  90  90  91  93  105  105  105  105  111  113  119  119  119
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 2
+      |(Definition)     : 
+      |(Reference)      : 27  27  27  38
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 48  96
+      |(Reference)      : 49  50  67  97
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     np
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 49  95  113
+      |(Reference)      : 64  77  79  96  105  105  105  105  114  119  119  119
+     nps
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 93
+      |(Reference)      : 95
+     pnm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 29
+      |(Definition)     : 37  45  77  79  90  105
+      |(Reference)      : 90  105  105  105  119  119  129
+     poly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 2  27
+      |(Definition)     : 129
+      |(Reference)      : 
+     rt2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 42
+      |(Reference)      : 43  45
+     s1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 57  68
+      |(Reference)      : 68  77
+     s2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 58  66
+      |(Reference)      : 66  79
+     sin
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 66
+     sinl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 2  27
+      |(Definition)     : 
+      |(Reference)      : 39
+     sn
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 40
+      |(Reference)      : 90
+     sn2i
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 41
+      |(Reference)      : 119
+     sqrt
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 40  42  46  54  55  88  101  102  103  117
+     theta
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 46
+      |(Reference)      : 56  72
+     xx
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 39
+      |(Reference)      : 40  40  41  41  46  46  46  105  119
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+          3  execution     (Definition) 92  
+                           (Reference)  91
+          4  execution     (Definition) 108  
+                           (Reference)  82  91  91
+         20  execution     (Definition) 80  
+                           (Reference)  48
+         27  execution     (Definition) 75  
+                           (Reference)  64
+         41  execution     (Definition) 107  
+                           (Reference)  95
+         50  execution     (Definition) 120  
+                           (Reference)  110  113
+         71  execution     (Definition) 131  
+                           (Reference)  123  125
+       1001  execution     (Definition) 136  
+                           (Reference)  38
+
+ Total information
+   Procedures       : 1
+   Total lines      : 147
+   Total statements : 88
+   Total stack(byte): 48
+   Total prefetch num: 0
+
+ Include file name list
+     1 : ../include/index.h
+

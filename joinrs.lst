@@ -1,0 +1,476 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:25 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : joinrs.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o joinrs.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "joinrs"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine joinrs(cc,r1,r2,r3,r4,nx,my_max,lev,jlistnum,num,ncld)
+               2                     c
+               3                           dimension cc(*), r1(*), r2(*), r3(*), r4(*)
+               4                     c
+               5                           if(num .eq. 2) call join2rs(cc,r1,r2,nx,my_max,lev,jlistnum,ncld)
+               6                           if(num .eq. 3) call join3rs(cc,r1,r2,r3,nx,my_max,lev,jlistnum,ncld)
+               7                     c
+               8                           return
+               9                           end
+
+ Diagnostic messages: program name(joinrs)
+   jwd2008i-i  "joinrs.f", line 3: Dummy argument 'r4' not used in this subprogram.
+
+ Procedure information
+   Lines      : 9
+   Statements : 6
+   Stack(byte): 0
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : joinrs
+   Attribute and Cross reference of name
+     cc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  3
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     join2rs
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 5
+     join3rs
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 6
+     joinrs
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     ncld
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     num
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 5  6
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     r1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  3
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     r2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  3
+      |(Definition)     : 5  6
+      |(Reference)      : 
+     r3
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  3
+      |(Definition)     : 6
+      |(Reference)      : 
+     r4
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  3
+      |(Definition)     : 
+      |(Reference)      : 
+
+ External subroutine subprogram "join2rs"
+  (inc)(line-no.)(nest)(optimize)
+              10                     c
+              11                           subroutine join2rs(cc,r1,r2,nx,my_max,lev,jlistnum,ncld)
+              12                     c
+              13                           dimension cc(nx+3,lev,1+ncld,my_max)
+              14                           dimension r1(nx,lev,my_max)
+              15                           dimension r2(nx,lev*ncld,my_max)
+              16                     c
+              17     1                     do 10 jj =1, jlistnum
+              18     2                     do 10 k=1,lev
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              19     3       8v            do 10 i=1,nx
+              20     3       8v            cc(i,k,1,jj)= r1(i,k,jj)
+              21     1       8v         10 continue
+              22                     c
+              23     1                     do 20 jj =1, jlistnum
+              24     2                     do 20 n=1,ncld
+              25     2                     nk=(n-1)*lev
+              26     3                     do 20 k=1,lev
+              27     3                     kk=nk+k
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              28     4       8v            do 20 i=1,nx
+              29     4       8v            cc(i,k,1+n,jj)= r2(i,kk,jj)
+              30     1       8v         20 continue
+              31                     c
+              32                           return
+              33                           end
+
+ Diagnostic messages: program name(join2rs)
+   jwd8220o-i  "joinrs.f", line 11: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "joinrs.f", line 19: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8204o-i  "joinrs.f", line 19: This loop is software pipelined.
+   jwd8205o-i  "joinrs.f", line 19: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "joinrs.f", line 20: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "joinrs.f", line 28: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8204o-i  "joinrs.f", line 28: This loop is software pipelined.
+   jwd8205o-i  "joinrs.f", line 28: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "joinrs.f", line 29: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+
+ Procedure information
+   Lines      : 24
+   Statements : 19
+   Stack(byte): 0
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : join2rs
+   Attribute and Cross reference of name
+     cc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 11  13
+      |(Definition)     : 20  29
+      |(Reference)      : 
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 19  28
+      |(Reference)      : 20  20  29  29
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 17  23
+      |(Reference)      : 20  20  29  29
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 17  23
+     join2rs
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 11
+      |(Reference)      : 
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 18  26
+      |(Reference)      : 20  20  27  29
+     kk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 27
+      |(Reference)      : 29
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 13  14  15  18  25  26
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 13  14  15
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 24
+      |(Reference)      : 25  29
+     ncld
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 13  15  24
+     nk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 25
+      |(Reference)      : 27
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 11
+      |(Definition)     : 
+      |(Reference)      : 13  14  15  19  28
+     r1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 11  14
+      |(Definition)     : 
+      |(Reference)      : 20
+     r2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 11  15
+      |(Definition)     : 
+      |(Reference)      : 29
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         10  execution     (Definition) 21  
+                           (Reference)  17  18  19
+         20  execution     (Definition) 30  
+                           (Reference)  23  24  26  28
+
+ External subroutine subprogram "join3rs"
+  (inc)(line-no.)(nest)(optimize)
+              34                     c
+              35                           subroutine join3rs(cc,r1,r2,r3,nx,my_max,lev,jlistnum,ncld)
+              36                     c
+              37                           dimension cc(nx+3,lev,2+ncld,my_max)
+              38                           dimension r1(nx+3,lev,my_max)
+              39                           dimension r2(nx+3,lev,my_max)
+              40                           dimension r3(nx+3,lev*ncld,my_max)
+              41                     c
+              42     1                     do 10 jj =1, jlistnum
+              43     2                     do 10 k=1,lev
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              44     3       8v            do 10 i=1,nx
+              45     3       8v            cc(i,k,1,jj)= r1(i,k,jj)
+              46     3       8v            cc(i,k,2,jj)= r2(i,k,jj)
+              47     1       8v         10 continue
+              48                     c
+              49     1                     do 20 jj =1, jlistnum
+              50     2                     do 20 n=1,ncld
+              51     2                     nk=(n-1)*lev
+              52     3                     do 20 k=1,lev
+              53     3                     kk=nk+k
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              54     4       8v            do 20 i=1,nx
+              55     4       8v            cc(i,k,2+n,jj)= r3(i,kk,jj)
+              56     1       8v         20 continue
+              57                     c
+              58                           return
+              59                           end
+
+ Diagnostic messages: program name(join3rs)
+   jwd8220o-i  "joinrs.f", line 35: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "joinrs.f", line 44: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8204o-i  "joinrs.f", line 44: This loop is software pipelined.
+   jwd8205o-i  "joinrs.f", line 44: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "joinrs.f", line 45: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "joinrs.f", line 46: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "joinrs.f", line 54: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8204o-i  "joinrs.f", line 54: This loop is software pipelined.
+   jwd8205o-i  "joinrs.f", line 54: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+   jwd8209o-i  "joinrs.f", line 55: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+
+ Procedure information
+   Lines      : 26
+   Statements : 21
+   Stack(byte): 0
+   Prefetch num: 0
+
+ Scoping unit of external sub-program : join3rs
+   Attribute and Cross reference of name
+     cc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 35  37
+      |(Definition)     : 45  46  55
+      |(Reference)      : 
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 44  54
+      |(Reference)      : 45  45  46  46  55  55
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 42  49
+      |(Reference)      : 45  45  46  46  55  55
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 35
+      |(Definition)     : 
+      |(Reference)      : 42  49
+     join3rs
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 35
+      |(Reference)      : 
+     k
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 43  52
+      |(Reference)      : 45  45  46  46  53  55
+     kk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 53
+      |(Reference)      : 55
+     lev
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 35
+      |(Definition)     : 
+      |(Reference)      : 37  38  39  40  43  51  52
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 35
+      |(Definition)     : 
+      |(Reference)      : 37  38  39  40
+     n
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 50
+      |(Reference)      : 51  55
+     ncld
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 35
+      |(Definition)     : 
+      |(Reference)      : 37  40  50
+     nk
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 51
+      |(Reference)      : 53
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 35
+      |(Definition)     : 
+      |(Reference)      : 37  38  39  40  44  54
+     r1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 35  38
+      |(Definition)     : 
+      |(Reference)      : 45
+     r2
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 35  39
+      |(Definition)     : 
+      |(Reference)      : 46
+     r3
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 35  40
+      |(Definition)     : 
+      |(Reference)      : 55
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         10  execution     (Definition) 47  
+                           (Reference)  42  43  44
+         20  execution     (Definition) 56  
+                           (Reference)  49  50  52  54
+
+ Total information
+   Procedures       : 3
+   Total lines      : 59
+   Total statements : 46
+   Total stack(byte): 0
+   Total prefetch num: 0
+

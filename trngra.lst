@@ -1,0 +1,826 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 10:56:34 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : trngra.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o trngra.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "trngra"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine trngra (jtrun,jtmax,nx,my,my_max,cim,poly,dpoly,s
+               2                          *                  ,dlpl,dtpl,nsize)
+               3                     c
+               4                     c  subroutine to transform spectral terrain pressure to grid point
+               5                     c  fields of zonal and meridional derivatives of terrain pressure
+               6                     c
+               7                     c *** input ***
+               8                     c
+               9                     c  jtrun: zonal wavenumber resolution limit
+              10                     c  jtmax: maximum amount of zonal waves located in each pe
+              11                     c  nx: e-w dimension no.
+              12                     c  my: n-s dimension no.
+              13                     c  my_max: maximum amount of n-s grids located in each pe
+              14                     c  cim: zonal wavenumber array
+              15                     c  poly: legendre polynomials
+              16                     c  dpoly: d(poly)/d(sin(lat))
+              17                     c  s: spectral coefficient array
+              18                     c  nsiz: pe number
+              19                     c
+              20                     c **** output ****
+              21                     c
+              22                     c  dlpl: d(pt)/d(longitude)
+              23                     c  dtpl: d(pt)/d(sin(lat))
+              24                     c
+              25                     c ****************************************************
+              26                     c
+              27                           include '../include/index.h'
+     1         1                     c      common /mwork/mlistnum,mlist(500)
+     1         2                     c     &             ,nlist(500),ilist(500)
+     1         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     1         4                     c     &            , jlistnum_tmp(1280)
+     1         5                           common /mwork/mlistnum,mlist(1000)
+     1         6                          &             ,nlist(1000),ilist(1000)
+     1         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     1         8                          &            , jlistnum_tmp(2560)
+              28                           include '../include/paramt.h'
+     2         1                     c
+     2         2                     cxxx  include paramt.h
+     2         3                           parameter (im= 2160, jm= im/2, lm=1, jtr= 2*((1+(im-1)/3)/2)
+     2         4                     c      parameter (im= 1800, jm= im/2, lm=1, jtr= 2*((1+(im-1)/3)/2)
+     2         5                          *, mlm= jtr*(jtr+1)/2)
+     2         6                     c
+     2         7                           parameter (imax= 2160, jmax=imax/2, lpx=1, kvkw=im/2)
+     2         8                     c      parameter (imax= 1800, jmax=imax/2, lpx=1, kvkw=im/2)
+     2         9                     cfj
+     2        10                           parameter (ilm=im*lm, im2=kvkw*(lm+1))
+     2        11                     cfj
+     2        12                     c
+     2        13                           parameter ( jmhalf=jm/2, lmX2=lm*2, lmX4=lm*4, lmX10=lm*10 )
+     2        14                     c
+     2        15                     c  this include file is used in subroutines with internal scratch work
+     2        16                     c  arrays.  the above parameters are used to dimension these arrays.
+     2        17                     c  on machines with a dynamic array fortran extension, e.g., CRAY and
+     2        18                     c  HP, the dimensions can be passed though the subroutine argument list
+     2        19                     c  and this include file is unnecessary, making these subroutine truly
+     2        20                     c  plug-compatible.  the following parameters in include file 'param.h'
+     2        21                     c  must be the same as the above.
+     2        22                     c
+     2        23                     c  im= nx
+     2        24                     c  jm= my
+     2        25                     c  lm= lev
+     2        26                     c  jtr= jtrun
+     2        27                     c  mlm= mlmax
+     2        28                     c  lpx= lpout
+     2        29                     c  kvkw=lvlw
+     2        30                     c
+     2        31                     c   imax and jmax are the dimensions of the 2.5 deg input fields
+     2        32                     c
+     2        33                     c *********************************************************************
+     2        34                     cxxx
+              29                           include '../include/fftcom.h'
+     3         1                     c
+     3         2                     cxxx  include fftcom.h
+     3         3                     c
+     3         4                     ccc   common/fft/ trigs(512),ifax(19)
+     3         5                     ct180 common/fft/ trigs(1024),ifax(19)
+     3         6                     ct240
+     3         7                     c      common/fft/ trigs(2048),ifax(19)
+     3         8                           common/fft/ trigs(4096),ifax(19)
+     3         9                     c
+     3        10                     c  ibm_fft : an option for choosing ibm essl fft routine (ibm_fft=1)
+     3        11                     c  "nx" can not be one of the following conditions:
+     3        12                     c     (1)radix of 3**i, i>2
+     3        13                     c     (2)radix of 5**i, i>1
+     3        14                     c     (3)radix of 7**i, i>1
+     3        15                     c     (4)radix of 11**i, i>1
+     3        16                     c     (5)radix of 13, 17, 19, 23, 29
+     3        17                     c
+     3        18                     ccc   parameter( ibm_fft = 0 )
+     3        19                     c
+     3        20                     c  working arrays for ibm_fft
+     3        21                     c
+     3        22                     ccc   parameter( nwork=22000 )
+     3        23                     c     dimension swkd1(nwork),twkd1(nwork)
+     3        24                     c     dimension swkd2(nwork),twkd2(nwork)
+     3        25                           logical lessl_fft
+     3        26                     c     common /ibm_fft/lessl_fft,incx,incy,isign,scale
+     3        27                     ccc  &               ,swkd1,twkd1,swkd2,twkd2
+     3        28                     
+     3        29                     c
+     3        30                     c  the parameter below is valid only for original rfftmlt used
+     3        31                     c
+     3        32                     c  length_fft : an option for doing fft with long or short vector
+     3        33                     c  length_fft = 0 : use long vector, which favors vector machines like
+     3        34                     c                   vpp5000
+     3        35                     c               1 : use short vector, which has better performance
+     3        36                     c                   on scalar machines
+     3        37                     c
+     3        38                           parameter ( length_fft = 1 )
+     3        39                     cxxx
+              30                     c
+              31                           dimension poly(jtrun,my/2,jtmax),dpoly(jtrun,my/2,jtmax)
+              32                           dimension s(jtrun,jtmax,2),dlpl(nx,my),dtpl(nx,my)
+              33                           dimension cim(jtmax)
+              34                     c
+              35                     csun  include '../include/paramt.h'
+              36                           dimension cc(nx+3,2,my_max)
+              37                     c
+              38                           dimension gwk1(nx+3,1,6,my_max)
+              39                     c
+              40                           dimension twcc_fk(my_max,jtmax*nsize,2)
+              41                           dimension twdd_fk(my_max,jtmax*nsize,2)
+              42                     cibm---deleted
+              43                     cibm     dimension wss(jtrun,jtmax,2)
+              44                     
+              45                           dimension wcu_fk(my_max*nsize,jtmax,2)
+              46                          &         ,wcv_fk(my_max*nsize,jtmax,2)
+              47                           dimension wcu_t(my,2),wcv_t(my,2)
+              48                     
+              49                           dimension ws3(jtrun,2,2)
+              50                           dimension ws4(jtrun,2,2)
+              51                     
+              52                     c
+              53                           myhalf=my/2
+              54                     
+              55     1                     do m=1,mlistnum
+              56     1                        mf=mlist(m)
+              57     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              58     2       8v            do 55 j=1,my
+              59     2       8v            wcu_fk(j,m,1)= 0.0
+              60     2       8v            wcu_fk(j,m,2)= 0.0
+              61     2       8v            wcv_fk(j,m,1)= 0.0
+              62     2       8v            wcv_fk(j,m,2)= 0.0
+              63     2       8v         55 continue
+              64     1               c
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              65     2       6v            do l=mf,jtrun
+              66     2       6v            ws3(l,1,1) = +s(l,m,2)
+              67     2       6v            ws3(l,2,1) = -s(l,m,1)
+              68     2       6v            ws4(l,1,2) = -s(l,m,1)
+              69     2       6v            ws4(l,2,2) = -s(l,m,2)
+              70     2       6v            enddo
+              71     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              72     2       8v            do j=1,my*2
+              73     2       8v            wcu_t(j,1)=0.
+              74     2       8v            wcv_t(j,1)=0.
+              75     2       8v            enddo
+              76     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 3)
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              77     2       2v            do l=mf,jtrun
+              78     2               *vocl loop,repeat(jmhalf)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 2)
+                                   <<<    PREFETCH       : 8
+                                   <<<      wcu_t: 4, wcv_t: 4
+                                   <<< Loop-information  End >>>
+              79     3       2             do j=1,myhalf
+              80     3       2v            wcu_t(j,1) = wcu_t(j,1) + ws3(l,1,1)*(cim(m)* poly(l,j,m))
+              81     3       2v            wcu_t(j,2) = wcu_t(j,2) + ws3(l,2,1)*(cim(m)* poly(l,j,m))
+              82     3       2v            wcv_t(j,1) = wcv_t(j,1) + ws4(l,1,2)*dpoly(l,j,m)
+              83     3       2v            wcv_t(j,2) = wcv_t(j,2) + ws4(l,2,2)*dpoly(l,j,m)
+              84     3       2             enddo
+              85     2                     enddo
+              86     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              87     2       4v            do l=mf,jtrun,2
+              88     2       4v            ws3(l,1,1) = +s(l,m,2)
+              89     2       4v            ws3(l,2,1) = -s(l,m,1)
+              90     2       4v            ws4(l,1,2) = +s(l,m,1)
+              91     2       4v            ws4(l,2,2) = +s(l,m,2)
+              92     2       4v            enddo
+              93     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              94     2       4v            do l=mf+1,jtrun,2
+              95     2       4v            ws3(l,1,1) = -s(l,m,2)
+              96     2       4v            ws3(l,2,1) = +s(l,m,1)
+              97     2       4v            ws4(l,1,2) = -s(l,m,1)
+              98     2       4v            ws4(l,2,2) = -s(l,m,2)
+              99     2       4v            enddo
+             100     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 3)
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             101     2       2v            do l=mf,jtrun
+             102     2               *vocl loop,repeat(jmhalf)
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    INTERCHANGED(nest: 2)
+                                   <<<    PREFETCH       : 8
+                                   <<<      wcu_t: 4, wcv_t: 4
+                                   <<< Loop-information  End >>>
+             103     3       2             do jj=myhalf+1,my
+             104     3       2v            j=my-jj+1
+             105     3       2v            wcu_t(jj,1) = wcu_t(jj,1) + ws3(l,1,1)*(cim(m)* poly(l,j,m))
+             106     3       2v            wcu_t(jj,2) = wcu_t(jj,2) + ws3(l,2,1)*(cim(m)* poly(l,j,m))
+             107     3       2v            wcv_t(jj,1) = wcv_t(jj,1) + ws4(l,1,2)*dpoly(l,j,m)
+             108     3       2v            wcv_t(jj,2) = wcv_t(jj,2) + ws4(l,2,2)*dpoly(l,j,m)
+             109     3       2             enddo
+             110     2                     enddo
+             111     1               
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             112     2       2v            do j=1,my
+             113     2       2v            jj=jlist2(j)
+             114     2       2v            wcu_fk(jj,m,1)=wcu_t(j,1)
+             115     2       2v            wcu_fk(jj,m,2)=wcu_t(j,2)
+             116     2       2v            wcv_fk(jj,m,1)=wcv_t(j,1)
+             117     2       2v            wcv_fk(jj,m,2)=wcv_t(j,2)
+             118     2       2v            enddo
+             119     1               
+             120     1                     enddo
+             121                     
+             122                            call mpe_transpose_rs1(wcu_fk,twcc_fk,my_max,jtmax,2,nsize)
+             123                            call mpe_transpose_rs1(wcv_fk,twdd_fk,my_max,jtmax,2,nsize)
+             124                     
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    FUSED(lines: 125,132)
+                                   <<< Loop-information  End >>>
+             125     1                     do jj=1,jlistnum
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+             126     2       8v            do i=1,nx+3
+             127     2       8v            cc(i,1,jj)= 0.
+             128     2       8v            cc(i,2,jj)= 0.
+             129     2       8v            enddo
+             130     1                     enddo
+             131                     
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    FUSED
+                                   <<< Loop-information  End >>>
+             132     1                     do jj=1,jlistnum
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             133     2       2s            do m=1,jtrun
+             134     2       2s               mm= 2*m-1
+             135     2       2s               mp= mm+1
+             136     2       2s               mlst=nlist(m)
+             137     2       2s               cc(mm,1,jj)=twcc_fk(jj,mlst,1)
+             138     2       2s               cc(mp,1,jj)=twcc_fk(jj,mlst,2)
+             139     2       2s               cc(mm,2,jj)=twdd_fk(jj,mlst,1)
+             140     2       2s               cc(mp,2,jj)=twdd_fk(jj,mlst,2)
+             141     2       2s            enddo
+             142     1                     enddo
+             143                     
+             144                           call rfftmlt(cc,gwk1,trigs,ifax,1,nx+3,nx,jlistnum*2,1)
+             145                     
+             146     1                     do 22 jj=1,jlistnum
+             147     1                     j=jlist1(jj)
+             148     1               !ocl novrec
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+             149     2       8v            do 22 i=1,nx
+             150     2       8v            dlpl(i,j)= -cc(i,1,jj)
+             151     2       8v            dtpl(i,j)= -cc(i,2,jj)
+             152     1       8v         22 continue
+             153                     c
+             154                           return
+             155                           end
+
+ Diagnostic messages: program name(trngra)
+   jwd2003i-i  "../include/fftcom.h", line 25: 'lessl_fft' is declared in INCLUDE but never referenced.
+   jwd8220o-i  "trngra.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd6001s-i  "trngra.f", line 58: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8663o-i  "trngra.f", line 58: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "trngra.f", line 58: Loop unrolled 8 times.
+   jwd6001s-i  "trngra.f", line 65: SIMD conversion is applied to DO loop with DO variable 'l'.
+   jwd8204o-i  "trngra.f", line 65: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 65: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 49.
+   jwd8209o-i  "trngra.f", line 69: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "trngra.f", line 72: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8663o-i  "trngra.f", line 72: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "trngra.f", line 72: Loop unrolled 8 times.
+   jwd8211o-i  "trngra.f", line 77: Loops interchanged at line 79.
+   jwd6004s-i  "trngra.f", line 77: SIMD conversion is applied to DO loop with DO variable 'l'. The DO loop contains a reduction operation.
+   jwd8204o-i  "trngra.f", line 77: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 77: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 16.
+   jwd8211o-i  "trngra.f", line 79: Loops interchanged at line 77.
+   jwd8209o-i  "trngra.f", line 80: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "trngra.f", line 81: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "trngra.f", line 83: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "trngra.f", line 87: SIMD conversion is applied to DO loop with DO variable 'l'.
+   jwd8204o-i  "trngra.f", line 87: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 87: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 32.
+   jwd8209o-i  "trngra.f", line 91: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "trngra.f", line 94: SIMD conversion is applied to DO loop with DO variable 'l'.
+   jwd8204o-i  "trngra.f", line 94: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 94: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 32.
+   jwd8209o-i  "trngra.f", line 98: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8211o-i  "trngra.f", line 101: Loops interchanged at line 103.
+   jwd6004s-i  "trngra.f", line 101: SIMD conversion is applied to DO loop with DO variable 'l'. The DO loop contains a reduction operation.
+   jwd8204o-i  "trngra.f", line 101: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 101: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 16.
+   jwd8211o-i  "trngra.f", line 103: Loops interchanged at line 101.
+   jwd8209o-i  "trngra.f", line 104: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "trngra.f", line 105: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "trngra.f", line 106: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8209o-i  "trngra.f", line 108: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6001s-i  "trngra.f", line 112: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8204o-i  "trngra.f", line 112: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 112: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 16.
+   jwd8210o-i  "trngra.f", line 125: Loops fused at line 132.
+   jwd6001s-i  "trngra.f", line 126: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8663o-i  "trngra.f", line 126: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "trngra.f", line 126: Loop unrolled 8 times.
+   jwd6145s-i  "trngra.f", line 133: SIMD conversion cannot be applied to DO loop: the definition and the reference to data are non-continuous accesses.
+   jwd8204o-i  "trngra.f", line 133: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 133: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 10.
+   jwd6001s-i  "trngra.f", line 149: SIMD conversion is applied to DO loop with DO variable 'i'.
+   jwd8204o-i  "trngra.f", line 149: This loop is software pipelined.
+   jwd8205o-i  "trngra.f", line 149: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 65.
+
+ Procedure information
+   Lines      : 236
+   Statements : 105
+   Stack(byte): 16
+   Prefetch num: 16
+
+ Scoping unit of external sub-program : trngra
+   Attribute and Cross reference of name
+     cc
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 36
+      |(Definition)     : 127  128  137  138  139  140  144
+      |(Reference)      : 150  151
+     cim
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  33
+      |(Definition)     : 
+      |(Reference)      : 80  81  105  106
+     dlpl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  32
+      |(Definition)     : 150
+      |(Reference)      : 
+     dpoly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  31
+      |(Definition)     : 
+      |(Reference)      : 82  83  107  108
+     dtpl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  32
+      |(Definition)     : 151
+      |(Reference)      : 
+     fft
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-8
+      |(Definition)     : 
+      |(Reference)      : 
+     gwk1
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 38
+      |(Definition)     : 144
+      |(Reference)      : 
+     i
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 126  149
+      |(Reference)      : 127  128  150  150  151  151
+     ifax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-8
+      |(Definition)     : 144
+      |(Reference)      : 
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     ilm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-10
+      |(Definition)     : 
+      |(Reference)      : 
+     im
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-3  2-3  2-7  2-10
+     im2
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-10
+      |(Definition)     : 
+      |(Reference)      : 
+     imax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 2-7
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 58  72  79  104  112  147
+      |(Reference)      : 59  60  61  62  73  74  80  80  80  81  81  81  82  82  82  83  83  83  105  106  107  108  113  114  115  116  117  150  151
+     jj
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 103  113  125  132  146
+      |(Reference)      : 104  105  105  106  106  107  107  108  108  114  115  116  117  127  128  137  137  138  138  139  139  140  140  147  150  151
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 147
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 113
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 125  132  144  146
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-13
+     jmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jmhalf
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 122  123
+      |(Reference)      : 31  31  32  33  40  41  45  45
+     jtr
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-3  2-3
+     jtrun
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 31  31  32  49  50  65  77  87  94  101  133
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-7
+      |(Definition)     : 
+      |(Reference)      : 
+     kvkw
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 2-10
+     l
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 65  77  87  94  101
+      |(Reference)      : 66  66  67  67  68  68  69  69  80  80  81  81  82  82  83  83  88  88  89  89  90  90  91  91  95  95  96  96  97  97  98  98  105  105  106  106  107  107  108  108
+     length_fft
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 3-38
+      |(Definition)     : 
+      |(Reference)      : 
+     lessl_fft
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : 
+      |(Declaration)    : 3-25
+      |(Definition)     : 
+      |(Reference)      : 
+     lm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 2-10  2-10  2-13  2-13  2-13
+     lmX10
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lmX2
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lmX4
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-13
+      |(Definition)     : 
+      |(Reference)      : 
+     lpx
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-7
+      |(Definition)     : 
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 55  133
+      |(Reference)      : 56  59  60  61  62  66  67  68  69  80  80  81  81  82  83  88  89  90  91  95  96  97  98  105  105  106  106  107  108  114  115  116  117  134  136
+     mf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 56
+      |(Reference)      : 65  77  87  94  101
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 56
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 55
+     mlm
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-3
+      |(Definition)     : 
+      |(Reference)      : 
+     mlst
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 136
+      |(Reference)      : 137  138  139  140
+     mm
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 134
+      |(Reference)      : 135  137  139
+     mp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 135
+      |(Reference)      : 138  140
+     mpe_transpose_rs1
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 122  123
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 
+      |(Reference)      : 31  31  32  32  47  47  53  58  72  103  104  112
+     my_max
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 122  123
+      |(Reference)      : 36  38  40  41  45  45
+     myhalf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 53
+      |(Reference)      : 79  103
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 136
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 122  123
+      |(Reference)      : 40  41  45  45
+     nx
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : dummy-argument
+      |(Declaration)    : 1
+      |(Definition)     : 144
+      |(Reference)      : 32  32  36  38  126  144  149
+     poly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  31
+      |(Definition)     : 
+      |(Reference)      : 80  81  105  106
+     rfftmlt
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 144
+     s
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, dummy-argument
+      |(Declaration)    : 1  32
+      |(Definition)     : 
+      |(Reference)      : 66  67  68  69  88  89  90  91  95  96  97  98
+     trigs
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 3-8
+      |(Definition)     : 144
+      |(Reference)      : 
+     trngra
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     twcc_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 40
+      |(Definition)     : 122
+      |(Reference)      : 137  138
+     twdd_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 41
+      |(Definition)     : 123
+      |(Reference)      : 139  140
+     wcu_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 45
+      |(Definition)     : 59  60  114  115  122
+      |(Reference)      : 
+     wcu_t
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 47
+      |(Definition)     : 73  80  81  105  106
+      |(Reference)      : 80  81  105  106  114  115
+     wcv_fk
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 45
+      |(Definition)     : 61  62  116  117  123
+      |(Reference)      : 
+     wcv_t
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 47
+      |(Definition)     : 74  82  83  107  108
+      |(Reference)      : 82  83  107  108  116  117
+     ws3
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 49
+      |(Definition)     : 66  67  88  89  95  96
+      |(Reference)      : 80  81  105  106
+     ws4
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION
+      |(Declaration)    : 50
+      |(Definition)     : 68  69  90  91  97  98
+      |(Reference)      : 82  83  107  108
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+         22  execution     (Definition) 152  
+                           (Reference)  146  149
+         55  execution     (Definition) 63  
+                           (Reference)  58
+
+ Total information
+   Procedures       : 1
+   Total lines      : 236
+   Total statements : 105
+   Total stack(byte): 16
+   Total prefetch num: 16
+
+ Include file name list
+     1 : ../include/index.h
+     2 : ../include/paramt.h
+     3 : ../include/fftcom.h
+

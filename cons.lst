@@ -1,0 +1,941 @@
+
+ Fujitsu Fortran Version 1.2.1  Wed Aug 14 16:30:31 2019
+
+ Compilation information
+   Current directory : /OFS3/nwpr/gfs/ncust1/VORTEX/src_vor
+   Source file       : cons.f
+
+ Option information
+   Command line options : -Kident_mpi -f2004 -Kfast,optmsg=2 -CcdRR8 -Fwide -V -Ec -Qa,d,i,p,t,x -c -Kfast -CcdRR8 -Fwide -c -o cons.o -L/package/fx10/dms/dms.v4/lib -lrdms -lgdbm -L/package/fx10/operlib/lib -lnwp -I/opt/FJSVfxlang/1.2.1/include/mpi/fujitsu -Knointentopt -I/opt/FJSVfxlang/1.2.1/lib64
+   Effective options    : -fi -g0 -AE -Ec -Fixed -Fwide -O3 -Qa,d,i,p,t,x -X03
+                          -CcdRR8 -x0
+                          -KSPARC64IXfx -KFLTLD -Kadr44 -Knoauto
+                          -Knoautoobjstack -Knocalleralloc -Kdalign -Keval
+                          -Knofenv_access -Kfp_contract -Kfp_relaxed
+                          -Kfsimple -Kilfunc=loop -Knointentopt -Klargepage
+                          -Kloop_blocking -Kloop_fission -Kloop_nofission_if
+                          -Kloop_fusion -Kloop_interchange
+                          -Kloop_nopart_parallel -Kloop_nopart_simd
+                          -Kloop_noversioning -Kns -Kmfunc=1 -Knoocl -Komitfp
+                          -Koptmsg=2 -Knopreex -Kprefetch_conditional
+                          -Kprefetch_noindirect -Kprefetch_sequential=auto
+                          -Kprefetch_nostride -Kprefetch_cache_level=all
+                          -Kprefetch_double_line_L2 -Kprefetch_noinfer
+                          -Kprefetch_nostrong -Kprefetch_strong_L2
+                          -Knoshortloop -Ksimd=1 -Knosimd_region_constant
+                          -Knostriping -Kswp -Knotemparraystack -Kunroll
+                          -Knouxsimd -KNOXFILL
+                          -Knoopenmp -Kopenmp_noassume_norecurrence
+                          -Kopenmp_noordered_reduction -Kopenmp_notls
+                          -Knothreadsafe -Knoparallel
+                          -Kparallel_nofp_precision -Knoarray_private
+                          -Knodynamic_iteration -Knoreduction
+                          -Knoregion_extension
+                          -Nallextput -Nnoalloc_assign
+                          -Ncancel_overtime_compilation -Nnocompdisp
+                          -Nnocopyarg -Nfreealloc -Nf90move -Nnohook_func
+                          -Nnohook_time -Nline -Nlst -Nlst=a -Nlst=d -Nlst=i
+                          -Nlst=p -Nlst=t -Nlst=x -Nnomallocfree -Nnoobsfun
+                          -Nquickdbg=noargchk -Nquickdbg=nosubchk
+                          -Nquickdbg=noundef -NRnotrap -Nnorecursive
+                          -Nrt_notune -Nnosave -Nsetvalue=noheap
+                          -Nsetvalue=nostack -Nsetvalue=noscalar
+                          -Nsetvalue=noarray -Nsetvalue=nostruct -Nuse_rodata
+
+ External subroutine subprogram "cons"
+  (inc)(line-no.)(nest)(optimize)
+               1                           subroutine cons
+               2                     c
+               3                           include '../include/param.h'
+     1         1                     c
+     1         2                     cxxx  include param.h
+     1         3                     c
+     1         4                           parameter (nx=2160, my= nx/2, lev= 1,nxp1=nx+1)
+     1         5                           parameter (jtrun= 2*((1+(nx-1)/3)/2), mlmax= jtrun*(jtrun+1)/2)
+     1         6                     c
+     1         7                     c specify the ncld = number of water spieces
+     1         8                     c             ncld = 1  : only humidity
+     1         9                     c                  = 2  : humidity and mixed cloud as qcirs
+     1        10                     c                  = 3  : humidity, qci and qrs  (not yet)
+     1        11                     c
+     1        12                           parameter(ncld=1)
+     1        13                     c
+     1        14                     c  specify the number of processors to be used for running model
+     1        15                     c
+     1        16                           parameter(npe=16)
+     1        17                     c      parameter(npe=1)
+     1        18                           parameter(jtmax=jtrun/npe+1)
+     1        19                           parameter(my_max=((my/npe+1)))
+     1        20                     c
+     1        21                     cxxx
+               4                           include '../include/mpe.h'
+     2         1                     c
+     2         2                     c  include mpe.h
+     2         3                     c
+     2         4                           parameter(mpe_integer=0)
+     2         5                           parameter(mpe_double=1)
+     2         6                           parameter(mpe_logical=2)
+     2         7                     c
+               5                           include '../include/rank.h'
+     3         1                           common/mpe_comm/nsize, myrank
+               6                           include '../include/index.h'
+     4         1                     c      common /mwork/mlistnum,mlist(500)
+     4         2                     c     &             ,nlist(500),ilist(500)
+     4         3                     c      common /jwork/jlistnum,jlist1(1280),jlist2(1280)
+     4         4                     c     &            , jlistnum_tmp(1280)
+     4         5                           common /mwork/mlistnum,mlist(1000)
+     4         6                          &             ,nlist(1000),ilist(1000)
+     4         7                           common /jwork/jlistnum,jlist1(2560),jlist2(2560)
+     4         8                          &            , jlistnum_tmp(2560)
+               7                           include '../include/const.h'
+     5         1                     c
+     5         2                           common/constp/
+     5         3                          &  poly(jtrun,my/2,jtmax),dpoly(jtrun,my/2,jtmax)
+     5         4                          &, eps4(jtrun,jtmax),cim(jtmax)
+     5         5                          &, wdfac(jtrun,jtmax),wcfac(jtrun,jtmax)
+     5         6                     c
+     5         7                           logical fplane,chmean
+     5         8                     
+     5         9                           common/const/ weight(my),sinl(my),cosl(my)
+     5        10                          *, cor(my),onocos(my),basu(my),basv(my)
+     5        11                          *, mlsort(jtrun,jtrun),msort(mlmax),lsort(mlmax)
+     5        12                     c
+     5        13                          *, rad,radsq,omega,cp,rgas,pi,capa,grav,hmean,taui,taue,tauo
+     5        14                          *, dt,tau,tfilt,hfilt,ktopo
+     5        15                          *, vmax,rvm,b,tylat,tylon,fplane
+     5        16                     c
+               8                           include '../include/fftcom.h'
+     6         1                     c
+     6         2                     cxxx  include fftcom.h
+     6         3                     c
+     6         4                     ccc   common/fft/ trigs(512),ifax(19)
+     6         5                     ct180 common/fft/ trigs(1024),ifax(19)
+     6         6                     ct240
+     6         7                     c      common/fft/ trigs(2048),ifax(19)
+     6         8                           common/fft/ trigs(4096),ifax(19)
+     6         9                     c
+     6        10                     c  ibm_fft : an option for choosing ibm essl fft routine (ibm_fft=1)
+     6        11                     c  "nx" can not be one of the following conditions:
+     6        12                     c     (1)radix of 3**i, i>2
+     6        13                     c     (2)radix of 5**i, i>1
+     6        14                     c     (3)radix of 7**i, i>1
+     6        15                     c     (4)radix of 11**i, i>1
+     6        16                     c     (5)radix of 13, 17, 19, 23, 29
+     6        17                     c
+     6        18                     ccc   parameter( ibm_fft = 0 )
+     6        19                     c
+     6        20                     c  working arrays for ibm_fft
+     6        21                     c
+     6        22                     ccc   parameter( nwork=22000 )
+     6        23                     c     dimension swkd1(nwork),twkd1(nwork)
+     6        24                     c     dimension swkd2(nwork),twkd2(nwork)
+     6        25                           logical lessl_fft
+     6        26                     c     common /ibm_fft/lessl_fft,incx,incy,isign,scale
+     6        27                     ccc  &               ,swkd1,twkd1,swkd2,twkd2
+     6        28                     
+     6        29                     c
+     6        30                     c  the parameter below is valid only for original rfftmlt used
+     6        31                     c
+     6        32                     c  length_fft : an option for doing fft with long or short vector
+     6        33                     c  length_fft = 0 : use long vector, which favors vector machines like
+     6        34                     c                   vpp5000
+     6        35                     c               1 : use short vector, which has better performance
+     6        36                     c                   on scalar machines
+     6        37                     c
+     6        38                           parameter ( length_fft = 1 )
+     6        39                     cxxx
+               9                     c
+              10                           rad=6.37e6
+              11                           radsq=rad*rad
+              12                           grav=9.81
+              13                           omega=7.292e-5
+              14                           cp=1004.5
+              15                           rgas=287.
+              16                           radsq = rad**2
+              17                           pi=4.0*atan(1.0)
+              18                           capa=1.0/3.5
+              19                           flat=24.0
+              20                     c
+              21                     c  build pointer arrays for locating zonal and total wavenumber
+              22                     c  values in the one-dimensional spherical harmonic arrays.
+              23                     c
+              24                           call sortml (jtrun,mlmax,msort,lsort,mlsort)
+              25                     c
+              26                           call make_list
+              27                     c
+              28     1                     do 150 m =1,mlistnum
+              29     1                      mf=mlist(m)
+              30     1               cibm--
+              31     1                      rm=mf-1
+              32     1                      if (mf.eq.1)  rm= 0.0
+              33     1                      cim(m) = rm
+              34     1               cibm--
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    UNSWITCHING
+                                   <<<    PREFETCH       : 16
+                                   <<<      wdfac: 8, wcfac: 8
+                                   <<< Loop-information  End >>>
+              35     2       4s            do 150 l=mf,jtrun
+              36     2       4v             rl = l
+              37     2       4v             rlm= rl-1.0
+              38     2       4v             if (mf.eq.1)  rm= 0.0
+              39     2       4v             eps4(l,m)= rl*rlm/radsq
+              40     3       4s             if ( l.eq.1 ) then
+              41     3       4m              wdfac(1,m) = 0. ; wcfac(1,m) = 0.
+              42     3       4s             else
+              43     3       4s              wdfac(l,m) = 1.0/(radsq*eps4(l,m))
+              44     3       4s              wcfac(l,m) = cim(m)*wdfac(l,m)
+              45     3       4v             endif
+              46     1       4v        150 continue
+              47                     c
+              48                     c  gaussian quadrature weights and latitudes
+              49                     c
+              50                           one= 1.0
+              51                           onem= -one
+              52                           call gausl3(my,onem,one,weight,sinl)
+              53                     c
+              54                           my2= my/2
+              55                     c
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              56     1       2v            do 180 j = 1, my2
+              57     1       2v            sinl(my+1-j)  = -sinl(j)
+              58     1       2v            weight(my+1-j)= weight(j)
+              59     1       2v            onocos(j)     = 1.0/(1.0-sinl(j)*sinl(j))
+              60     1       2v            onocos(my+1-j)= onocos(j)
+              61     1       2v            cosl(j)       = 1.0/sqrt(onocos(j))
+              62     1       2v            cosl(my+1-j)  = cosl(j)
+              63     1       2v        180 continue
+              64                     c
+              65                     c  define coriolis parameter for each latitude
+              66                     c
+              67                     c      do 190 j=1,my
+              68                     c      cor(j)= 2.0*omega*sinl(j)
+              69                     c 190 continue
+              70                     
+              71     1                     if(fplane)then
+              72     1                       d2r=pi/180.
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              73     2        v              do j=1,my
+              74     2        v                cor(j)=2.0*omega*sin(flat*d2r)
+              75     2        v              enddo
+              76     1                     else
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<<    SOFTWARE PIPELINING
+                                   <<< Loop-information  End >>>
+              77     2       7v            do 190 j=1,my
+              78     2       7v            cor(j)= 2.0*omega*sinl(j)
+              79     2       7v        190 continue
+              80     1                     endif
+              81                     
+                                   <<< Loop-information Start >>>
+                                   <<<  [OPTIMIZATION]
+                                   <<<    SIMD
+                                   <<< Loop-information  End >>>
+              82             7v            basu = 0.
+              83             7v            basv = 0.
+              84                     c
+              85                     c
+              86                     c  initialize ifax and trigs for rfftmlt routine
+              87                     c
+              88                           call fftfax (nx,ifax,trigs)
+              89                     c
+              90                     cibm---beg
+              91                     cibm ... if 'ibm_fft=1' set in fftcom.h
+              92                     cibm ... check if the ESSL fft routine support the seq lenth of nx
+              93                     cibm ... if not, rfftmlt routine will be used.
+              94                     cibm ... contral logical 'lessl_fft' is in the common/ibm_fft/
+              95                     c
+              96                              lessl_fft=.false.
+              97     1                        if (ibm_fft.eq.1) then
+              98     1                          nn = nx
+              99     1                          if (iand(nn,1).eq.1) go to 111   ! not an even number
+             100     2                          if (mod(nn,9).eq.0) then
+             101     2                            if (mod(nn/9,3).eq.0) go to 111   ! radix of 3**i, i>2
+             102     2                          endif
+             103     2                          if (mod(nn,5).eq.0) then
+             104     2                            if (mod(nn/5,5).eq.0) go to 111   ! radix of 5**i, i>1
+             105     2                          endif
+             106     2                          if (mod(nn,7).eq.0) then
+             107     2                            if (mod(nn/7,7).eq.0) go to 111   ! radix of 7**i, i>1
+             108     2                          endif
+             109     2                          if (mod(nn,11).eq.0) then
+             110     2                            if (mod(nn/11,11).eq.0) go to 111 ! radix of 11**i, i>1
+             111     2                          endif
+             112     1                          if (mod(nn,13).eq.0) go to 111   ! radix of 13
+             113     1                          if (mod(nn,17).eq.0) go to 111
+             114     1                          if (mod(nn,19).eq.0) go to 111
+             115     1                          if (mod(nn,23).eq.0) go to 111
+             116     1                          if (mod(nn,29).eq.0) go to 111
+             117     1                          lessl_fft=.true.
+             118     1                 111      continue
+             119     1                        endif
+             120                     c
+             121                     c  define associated legendre polynomials and their derivatives
+             122                     c
+             123                           call lgndr (my2,jtrun,jtmax,sinl,poly,dpoly)
+             124                     c
+             125                           return
+             126                           end
+
+ Diagnostic messages: program name(cons)
+   jwd2003i-i  "../include/const.h", line 7: 'chmean' is declared in INCLUDE but never referenced.
+   jwd2441i-i  "../include/const.h", line 9: Common block object 'vmax' relocated to correct boundary.
+   jwd8220o-i  "cons.f", line 1: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8321o-i  "cons.f", line 35: Loop unswitched.
+   jwd6229s-i  "cons.f", line 35: SIMD conversion cannot be applied to DO loop: there are IF statements in the loop.
+   jwd8670o-i  "cons.f", line 35: This loop is not software pipelined because the loop contains a branch instruction which is not for loop iteration.
+   jwd8202o-i  "cons.f", line 35: Loop unrolled 4 times.
+   jwd8220o-i  "cons.f", line 36: Optimizations is performed in this program unit with possibility of side effects. See informational messages below to determine which such optimizations have been performed.
+   jwd8206o-i  "cons.f", line 39: Division is changed to multiplication by reciprocal.
+   jwd8209o-i  "cons.f", line 39: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd6208s-i  "cons.f", line 41: SIMD conversion cannot be applied to DO loop: the order of data references of definition 'wdfac' may be different from the order of data references in serial execution.
+   jwd6208s-i  "cons.f", line 41: SIMD conversion cannot be applied to DO loop: the order of data references of definition 'wcfac' may be different from the order of data references in serial execution.
+   jwd6001s-i  "cons.f", line 56: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8204o-i  "cons.f", line 56: This loop is software pipelined.
+   jwd8205o-i  "cons.f", line 56: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 24.
+   jwd8206o-i  "cons.f", line 61: Division is changed to multiplication by reciprocal.
+   jwd8206o-i  "cons.f", line 72: Division is changed to multiplication by reciprocal.
+   jwd6001s-i  "cons.f", line 73: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8209o-i  "cons.f", line 73: Evaluation order of polynomial expression is changed according to commutative law of addition and multiplication.
+   jwd8663o-i  "cons.f", line 73: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd6001s-i  "cons.f", line 77: SIMD conversion is applied to DO loop with DO variable 'j'.
+   jwd8204o-i  "cons.f", line 77: This loop is software pipelined.
+   jwd8205o-i  "cons.f", line 77: The software-pipelined loop is chosen at run time when the iteration count is greater than or equal to 70.
+   jwd6003s-i  "cons.f", line 82: SIMD conversion is applied to array description.
+   jwd8663o-i  "cons.f", line 82: This loop is not software pipelined because software pipelining is worthless for this loop.
+   jwd8202o-i  "cons.f", line 82: Loop unrolled 7 times.
+   jwd2005i-w  "cons.f", line 97: 'ibm_fft' is used but never set.
+
+ Procedure information
+   Lines      : 218
+   Statements : 101
+   Stack(byte): 16
+   Prefetch num: 16
+
+ Scoping unit of external sub-program : cons
+   Attribute and Cross reference of name
+     atan
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 17
+     b
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     basu
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 82
+      |(Reference)      : 
+     basv
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 83
+      |(Reference)      : 
+     capa
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 18
+      |(Reference)      : 
+     chmean
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : 
+      |(Declaration)    : 5-7
+      |(Definition)     : 
+      |(Reference)      : 
+     cim
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 33
+      |(Reference)      : 44
+     cons
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 1
+      |(Reference)      : 
+     const
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     constp
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 5-2
+      |(Definition)     : 
+      |(Reference)      : 
+     cor
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 74  78
+      |(Reference)      : 
+     cosl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 61  62
+      |(Reference)      : 62
+     cp
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 14
+      |(Reference)      : 
+     d2r
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 72
+      |(Reference)      : 74
+     dpoly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 123
+      |(Reference)      : 
+     dt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     eps4
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 39
+      |(Reference)      : 43
+     fft
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 6-8
+      |(Definition)     : 
+      |(Reference)      : 
+     fftfax
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 88
+     flat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 19
+      |(Reference)      : 74
+     fplane
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-7  5-9
+      |(Definition)     : 
+      |(Reference)      : 71
+     gausl3
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 52
+     grav
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 12
+      |(Reference)      : 
+     hfilt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     hmean
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     iand
+      |(Class and Type) : intrinsic function name, INTEGER(4)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 99
+     ibm_fft
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 97
+     ifax
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 88
+      |(Reference)      : 
+     ilist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     j
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 56  73  77
+      |(Reference)      : 57  57  58  58  59  59  59  60  60  61  61  62  62  74  78  78
+     jlist1
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlist2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jlistnum_tmp
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     jtmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-18
+      |(Definition)     : 
+      |(Reference)      : 5-2  5-2  5-2  5-2  5-2  5-2  123
+     jtrun
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 1-5  1-5  1-18  5-2  5-2  5-2  5-2  5-2  5-9  5-9  24  35  123
+     jwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-7
+      |(Definition)     : 
+      |(Reference)      : 
+     ktopo
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     l
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 35
+      |(Reference)      : 36  39  40  43  43  44  44
+     length_fft
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 6-38
+      |(Definition)     : 
+      |(Reference)      : 
+     lessl_fft
+      |(Class and Type) : variable name, LOGICAL(4)
+      |(Attributes)     : 
+      |(Declaration)    : 6-25
+      |(Definition)     : 96  117
+      |(Reference)      : 
+     lev
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+     lgndr
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 123
+     lsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 24
+      |(Reference)      : 
+     m
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 28
+      |(Reference)      : 29  33  39  41  41  43  43  44  44  44
+     make_list
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 26
+     mf
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 29
+      |(Reference)      : 31  32  35  38
+     mlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 29
+     mlistnum
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 28
+     mlmax
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-5
+      |(Definition)     : 
+      |(Reference)      : 5-9  5-9  24
+     mlsort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 24
+      |(Reference)      : 
+     mod
+      |(Class and Type) : intrinsic function name, INTEGER(4)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 100  101  103  104  106  107  109  110  112  113  114  115  116
+     mpe_comm
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_double
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-5
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_integer
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-4
+      |(Definition)     : 
+      |(Reference)      : 
+     mpe_logical
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 2-6
+      |(Definition)     : 
+      |(Reference)      : 
+     msort
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 24
+      |(Reference)      : 
+     mwork
+      |(Class and Type) : common name
+      |(Attributes)     : 
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     my
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-19  5-2  5-2  5-9  5-9  5-9  5-9  5-9  5-9  5-9  52  54  57  58  60  62  73  77
+     my2
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 54  123
+      |(Reference)      : 56
+     my_max
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-19
+      |(Definition)     : 
+      |(Reference)      : 
+     myrank
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     ncld
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-12
+      |(Definition)     : 
+      |(Reference)      : 
+     nlist
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 4-5
+      |(Definition)     : 
+      |(Reference)      : 
+     nn
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 98
+      |(Reference)      : 99  100  101  103  104  106  107  109  110  112  113  114  115  116
+     npe
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-16
+      |(Definition)     : 
+      |(Reference)      : 1-18  1-19
+     nsize
+      |(Class and Type) : variable name, INTEGER(4)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 3-1
+      |(Definition)     : 
+      |(Reference)      : 
+     nx
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 1-4  1-4  1-5  88  98
+     nxp1
+      |(Class and Type) : named constant, INTEGER(4)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 1-4
+      |(Definition)     : 
+      |(Reference)      : 
+     omega
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 13
+      |(Reference)      : 74  78
+     one
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 50  52
+      |(Reference)      : 51
+     onem
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 51  52
+      |(Reference)      : 
+     onocos
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 59  60
+      |(Reference)      : 60  61
+     pi
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 17
+      |(Reference)      : 72
+     poly
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 123
+      |(Reference)      : 
+     rad
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 10
+      |(Reference)      : 11  11  16
+     radsq
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 11  16
+      |(Reference)      : 39  43
+     rgas
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 15
+      |(Reference)      : 
+     rl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 36
+      |(Reference)      : 37  39
+     rlm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 37
+      |(Reference)      : 39
+     rm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 31  32  38
+      |(Reference)      : 33
+     rvm
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     sin
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 74
+     sinl
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 52  57  123
+      |(Reference)      : 57  59  59  78
+     sortml
+      |(Class and Type) : external subroutine name
+      |(Attributes)     : 
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 24
+     sqrt
+      |(Class and Type) : intrinsic function name, REAL(8)
+      |(Attributes)     : PURE, ELEMENTAL
+      |(Declaration)    : 
+      |(Definition)     : 
+      |(Reference)      : 61
+     tau
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     taue
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     taui
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tauo
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tfilt
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     trigs
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 6-8
+      |(Definition)     : 88
+      |(Reference)      : 
+     tylat
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     tylon
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     vmax
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 
+      |(Reference)      : 
+     wcfac
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 41  44
+      |(Reference)      : 
+     wdfac
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-2
+      |(Definition)     : 41  43
+      |(Reference)      : 44
+     weight
+      |(Class and Type) : variable name, REAL(8)-implicited
+      |(Attributes)     : DIMENSION, common-block-object
+      |(Declaration)    : 5-9
+      |(Definition)     : 52  58
+      |(Reference)      : 58
+   Cross reference of label
+     (Label) (label-kind)               (line-no.)
+     ------- ------------- ------------ ----------
+        111  execution     (Definition) 118  
+                           (Reference)  99  101  104  107  110  112  113  114  115  116
+        150  execution     (Definition) 46  
+                           (Reference)  28  35
+        180  execution     (Definition) 63  
+                           (Reference)  56
+        190  execution     (Definition) 79  
+                           (Reference)  77
+
+ Total information
+   Procedures       : 1
+   Total lines      : 218
+   Total statements : 101
+   Total stack(byte): 16
+   Total prefetch num: 16
+
+ Include file name list
+     1 : ../include/param.h
+     2 : ../include/mpe.h
+     3 : ../include/rank.h
+     4 : ../include/index.h
+     5 : ../include/const.h
+     6 : ../include/fftcom.h
+
